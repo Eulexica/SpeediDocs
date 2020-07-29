@@ -1,0 +1,136 @@
+object frmDocList: TfrmDocList
+  Left = 0
+  Top = 0
+  Caption = 'Document List'
+  ClientHeight = 477
+  ClientWidth = 604
+  Color = clBtnFace
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -12
+  Font.Name = 'Segoe UI'
+  Font.Style = []
+  OldCreateOrder = False
+  OnClose = FormClose
+  OnCreate = FormCreate
+  PixelsPerInch = 96
+  TextHeight = 15
+  object Panel1: TPanel
+    Left = 0
+    Top = 444
+    Width = 604
+    Height = 33
+    Align = alBottom
+    TabOrder = 0
+    ExplicitTop = 425
+    ExplicitWidth = 545
+    DesignSize = (
+      604
+      33)
+    object BitBtn1: TBitBtn
+      Left = 420
+      Top = 6
+      Width = 75
+      Height = 23
+      Anchors = [akRight, akBottom]
+      Caption = 'Select'
+      ModalResult = 1
+      TabOrder = 0
+      ExplicitLeft = 361
+    end
+    object BitBtn2: TBitBtn
+      Left = 515
+      Top = 6
+      Width = 75
+      Height = 23
+      Anchors = [akRight, akBottom]
+      Caption = 'Cancel'
+      ModalResult = 2
+      TabOrder = 1
+      ExplicitLeft = 456
+    end
+    object edtMatter: TEdit
+      Left = 53
+      Top = 6
+      Width = 121
+      Height = 23
+      TabOrder = 2
+    end
+    object btnSearch: TBitBtn
+      Left = 174
+      Top = 6
+      Width = 75
+      Height = 23
+      Caption = 'Search'
+      TabOrder = 3
+      OnClick = btnSearchClick
+    end
+  end
+  object cxGrid1: TcxGrid
+    Left = 0
+    Top = 0
+    Width = 604
+    Height = 444
+    Align = alClient
+    TabOrder = 1
+    ExplicitWidth = 545
+    ExplicitHeight = 425
+    object tvDocList: TcxGridDBTableView
+      Navigator.Buttons.CustomButtons = <>
+      DataController.DataSource = dmSaveDoc.dsDocs
+      DataController.Summary.DefaultGroupSummaryItems = <>
+      DataController.Summary.FooterSummaryItems = <>
+      DataController.Summary.SummaryGroups = <>
+      OptionsData.Deleting = False
+      OptionsData.Editing = False
+      OptionsData.Inserting = False
+      OptionsSelection.CellSelect = False
+      OptionsSelection.MultiSelect = True
+      OptionsView.GroupByBox = False
+      OptionsView.Indicator = True
+      object tvDocListFILEID: TcxGridDBColumn
+        Caption = 'Matter'
+        DataBinding.FieldName = 'FILEID'
+        Width = 60
+      end
+      object tvDocListD_CREATE: TcxGridDBColumn
+        Caption = 'Created'
+        DataBinding.FieldName = 'D_CREATE'
+        Width = 65
+      end
+      object tvDocListDOC_NAME: TcxGridDBColumn
+        Caption = 'Document Name'
+        DataBinding.FieldName = 'DOC_NAME'
+        Width = 100
+      end
+      object tvDocListDESCR: TcxGridDBColumn
+        Caption = 'Description'
+        DataBinding.FieldName = 'DESCR'
+        Width = 120
+      end
+      object tvDocListEMAIL_SENT_TO: TcxGridDBColumn
+        Caption = 'Email Sent To'
+        DataBinding.FieldName = 'EMAIL_SENT_TO'
+        Width = 120
+      end
+      object tvDocListEMAIL_FROM: TcxGridDBColumn
+        Caption = 'Email From'
+        DataBinding.FieldName = 'EMAIL_FROM'
+        Width = 120
+      end
+      object tvDocListNMATTER: TcxGridDBColumn
+        DataBinding.FieldName = 'NMATTER'
+        Visible = False
+        VisibleForCustomization = False
+      end
+      object tvDocListDOCID: TcxGridDBColumn
+        DataBinding.FieldName = 'DOCID'
+        Visible = False
+        VisibleForCustomization = False
+      end
+    end
+    object cxGrid1Level1: TcxGridLevel
+      GridView = tvDocList
+    end
+  end
+end

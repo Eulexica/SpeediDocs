@@ -1,0 +1,1098 @@
+unit SpeediDocs_IMPL;
+
+interface
+
+uses
+  ComObj, ComServ, ActiveX, Variants, Office_TLB, adxAddIn, SpeediDocs_TLB,
+  System.Classes,  Excel_TLB, Dialogs, StdVcl, adxHostAppEvents,
+  Forms, Windows, SaveDoc, dxCore, adxolFormsManager, vcl.controls, Matters,
+  Vcl.ImgList, Word_TLB, Registry, Outlook2000, Outlook2010, SysUtils;
+
+const
+   LOGFILESIZE = 10000;
+
+  { OlItemType constants }
+  olMailItem = 0;
+  olAppointmentItem = 1;
+  olContactItem = 2;
+  olTaskItem = 3;
+  olJournalItem = 4;
+  olNoteItem = 5;
+  olPostItem = 6;
+  { OlAttachmentType constants }
+  olByValue = 1;
+  olByReference = 4;
+  olEmbeddedItem = 5;
+  olOLE = 6;
+
+type
+  TcoSpeediDocs = class(TadxAddin, IcoSpeediDocs)
+  end;
+
+  TAddInModule = class(TadxCOMAddInModule)
+    RibbonTabSpeediDocs: TadxRibbonTab;
+    adxOutlookAppEvents: TadxOutlookAppEvents;
+    adxRibbonContextMenuExplorer: TadxRibbonContextMenu;
+    adxContextMenuExplorer: TadxContextMenu;
+    adxOlFormsManager: TadxOlFormsManager;
+    ilstToolbar: TImageList;
+    adxRibbonTabReadEmail: TadxRibbonTab;
+    adxRibbonTabWord: TadxRibbonTab;
+    adxRibbonContextMenuAppt: TadxRibbonContextMenu;
+    procedure RibbonTabSpeediDocsControls0Controls0Click(Sender: TObject;
+      const RibbonControl: IRibbonControl);
+    procedure adxContextMenu1Controls0Click(Sender: TObject);
+    procedure CommandBarSpeediDocsControls0Click(Sender: TObject);
+    procedure RibbonTabSpeediDocsControls0Controls0Controls0Click(
+      Sender: TObject; const RibbonControl: IRibbonControl);
+    procedure adxCOMAddInModuleAddInFinalize(Sender: TObject);
+    procedure adxCOMAddInModuleAddInInitialize(Sender: TObject);
+    procedure RibbonTabSpeediDocsControls1Controls1Click(Sender: TObject;
+      const RibbonControl: IRibbonControl);
+    procedure RibbonTabSpeediDocsControls1Controls2Click(Sender: TObject;
+      const RibbonControl: IRibbonControl);
+    procedure adxRibbonContextMenu1Controls0Click(Sender: TObject;
+      const RibbonControl: IRibbonControl);
+    procedure RibbonTabSpeediDocsControls1Controls3Click(Sender: TObject;
+      const RibbonControl: IRibbonControl);
+    procedure RibbonTabSpeediDocsControls4Controls0Click(Sender: TObject;
+      const RibbonControl: IRibbonControl);
+    procedure adxOutlookAppEventsNewMailEx(ASender: TObject;
+      const EntryIDCollection: WideString);
+    procedure RibbonTabSpeediDocsControls2Controls0Click(Sender: TObject;
+      const RibbonControl: IRibbonControl);
+    procedure adxCOMAddInModuleAddInBeginShutdown(Sender: TObject);
+    procedure adxRibbonTabReadEmailControls0Controls0Click(Sender: TObject;
+      const RibbonControl: IRibbonControl);
+    procedure adxRibbonTabWordControls0Controls0Click(Sender: TObject;
+      const RibbonControl: IRibbonControl);
+    procedure adxCOMAddInModuleAddInStartupComplete(Sender: TObject);
+    procedure adxRibbonTabNewEmailControls0Controls0Click(Sender: TObject;
+      const RibbonControl: IRibbonControl);
+    procedure adxContextMenu1Controls1Click(Sender: TObject);
+    procedure adxCOMAddInModuleError(const E: Exception; var Handled: Boolean);
+    procedure adxRibbonContextMenuApptControls1Click(Sender: TObject;
+      const RibbonControl: IRibbonControl);
+  private
+   FItems,
+   FItemsSent: TItems;
+   LRegAxiom: TRegistry;
+   sRegistryRoot: string;
+   bSentFromInsight: boolean;
+   bSaveSentEmail: boolean;
+   procedure DoSave;
+   procedure DoSavePrecedent;
+   procedure DoItemAdd(ASender: TObject; const Item: IDispatch);
+   procedure WriteLog(const AMessage: string);
+   procedure GetLogFilePath;
+   procedure ConvertApptToFee;
+  protected
+
+  public
+//   AddInModule: TAddInModule;
+   ol2010: Outlook2010._Application;
+   ex2010: Excel_TLB._Application;
+   wrd2010: word_TLB._Application;
+   bLogFile: boolean;
+   FLogFile: TextFile;
+   LogFile: string;
+   procedure DoItemSend(ASender: TObject; const Item: IDispatch;
+      var Cancel: WordBool);
+  end;
+
+var
+   AddInModule: TAddInModule;
+
+implementation
+
+{$R *.dfm}
+
+Uses
+   SaveDocDetails
+   , LoginDetails
+   , OutlookUnit
+   , SaveDocFunc
+   , NewFee
+   , WordUnit
+   , FieldList
+   , SaveprecDetails
+   , ExcelUnit
+   , MatterSearch
+   , DocList;
+
+var
+   locallcid: integer;
+   CS: TRTLCriticalSection;
+
+
+procedure TAddInModule.adxCOMAddInModuleAddInBeginShutdown(Sender: TObject);
+begin
+   try
+      WriteLog('Begin shutdown');
+      if Assigned(frmSaveDocDetails) then
+         frmSaveDocDetails.Free;
+      if Assigned(dmSaveDoc) then
+      begin
+         dmSaveDoc.orsInsight.Disconnect;
+         dmSaveDoc.Free;
+      end;
+   except
+      WriteLog('Error in AddInBeginShutdown');
+   end;
+end;
+
+procedure TAddInModule.adxCOMAddInModuleAddInFinalize(Sender: TObject);
+begin
+   try
+      WriteLog('Begin Finalize section');
+      if (bLogFile = True) and (IsFileInUse(LogFile) = True) then
+         CloseFile(FLogFile);
+      if Assigned(FItemsSent) then
+         FItemsSent.Free;
+
+      if Assigned(FItems) then
+         FItems.Free;
+
+      try
+         if (dmSaveDoc <> nil) then
+            dmSaveDoc.orsInsight.Disconnect;
+      except
+         //
+      end;
+      AddInModule := nil;
+   except
+      WriteLog('Error in AddInFinalize');
+   end;
+end;
+
+procedure TAddInModule.adxCOMAddInModuleAddInInitialize(Sender: TObject);
+begin
+   try
+      GetLogFilePath;
+
+      WriteLog('adxCOMAddInModuleAddInInitialize');
+      Application.Handle := GetActiveWindow;
+      AddInModule := Self;
+      bSentFromInsight := False;
+
+      if HostType = ohaOutlook then
+         ol2010:= self.OutlookApp.Application as Outlook2010._Application;
+   except
+      WriteLog('Error in AddInInitialize');
+   end;
+end;
+
+procedure TAddInModule.GetLogFilePath;
+begin
+  try
+      bLogFile := False;
+      LregAxiom := TRegistry.Create;
+      try
+         LregAxiom.RootKey := HKEY_CURRENT_USER;
+         LregAxiom.OpenKey(csRegistryRoot, True);
+         bLogFile := (LregAxiom.ReadString('EventLog') = 'Y');
+         LogFile := LregAxiom.ReadString('LogFilePath');
+         if (LogFile = '') then
+            bLogFile := False;
+      finally
+         LregAxiom.Free;
+      end;
+   except
+      WriteLog('Exception with GetLogFilePath');
+   end;
+end;
+
+procedure TAddInModule.DoItemAdd(ASender: TObject; const Item: IDispatch);
+var
+   Mail: Outlook2000.MailItem;
+   IFolderSent: MAPIFolder;
+begin
+   try
+      if HostType = ohaOutlook then
+      begin
+         WriteLog('Item Add begin');
+         if (bSaveSentEmail = True) then
+         begin
+            if Assigned(Item) then
+            begin
+               Item.QueryInterface(IID__MailItem, Mail);
+               if Assigned(Mail) then
+               begin
+                  try
+                     IFolderSent := Mail.Parent as MAPIFolder;
+                     if ((IFolderSent.Name = 'Sent Items') or
+                        (IFolderSent.Name = 'Sent Mail')) then
+                     begin
+                        try
+                           WriteLog('Attempting to save sent email = ' + Mail.Subject);
+                           SentMessage(Mail, True);
+                        finally
+                           Mail := nil;
+                           WriteLog('sent email saved');
+                        end;
+                     end;
+                  finally
+                     IFolderSent := nil;
+                     WriteLog('clean up');
+                  end;
+               end;
+            end;
+         end;
+      end;
+   except
+      WriteLog('Exception with DoItemAdd');
+   end;
+end;
+
+procedure TAddInModule.adxCOMAddInModuleAddInStartupComplete(Sender: TObject);
+var
+   IFolderInbox: Outlook2000.MAPIFolder;
+   IFolderSent: Outlook2000.MAPIFolder;
+begin
+   try
+      // Outlook events
+      WriteLog('Started adxCOMAddInModuleAddInStartupComplete');
+      if HostType = ohaOutlook then
+      begin
+         WriteLog('Startup adxCOMAddInModuleAddInStartupComplete - Outlook');
+         FItems := nil;
+         FItemsSent := nil;
+         if Assigned(OutlookApp) then
+         begin
+            IFolderSent := OutlookApp.GetNamespace('MAPI').GetDefaultFolder(olFolderSentMail);
+            if Assigned(IFolderSent) then
+            try
+               FItemsSent := TItems.Create(nil);
+               FItemsSent.ConnectTo(IFolderSent.Items);
+               FItemsSent.OnItemAdd := DoItemAdd;
+            finally
+               IFolderSent := nil;
+            end;
+         end;
+         LregAxiom := TRegistry.Create;
+         try
+            LregAxiom.RootKey := HKEY_CURRENT_USER;
+            LregAxiom.OpenKey(csRegistryRoot, False);
+            bSaveSentEmail := (LregAxiom.ReadString('SaveSentEmail') = 'Y');
+            if (LregAxiom.ReadString('ShowMatterList') = 'Y') then
+            begin
+               WriteLog('Show Matter list');
+               adxOlFormsManager.Items[0].ExplorerLayout := elBottomNavigationPane;
+            end
+            else
+               adxOlFormsManager.Items[0].ExplorerLayout := elUnknown;
+         finally
+            LregAxiom.Free;
+         end;
+      end;
+
+      if HostType = ohaExcel then
+         ex2010 := self.ExcelApp.Application as Excel_TLB._Application;
+      if Hosttype = ohaword then
+         wrd2010 := self.WordApp.Application as Word_TLB._Application;
+      WriteLog('Finished adxCOMAddInModuleAddInStartupComplete');
+      dmSaveDoc := TdmSaveDoc.Create(Application);
+      dmSaveDoc.GetUserID;
+   except
+      WriteLog('Error in StartupComplete');
+   end;
+end;
+
+procedure TAddInModule.adxCOMAddInModuleError(const E: Exception;
+  var Handled: Boolean);
+begin
+   try
+      WriteLog('Addin Exception: '  + E.Message);
+      Handled := True;
+   except
+      // Ignore
+   end;
+end;
+
+procedure TAddInModule.adxContextMenu1Controls0Click(Sender: TObject);
+begin
+   DoSave;
+end;
+
+procedure TAddInModule.adxContextMenu1Controls1Click(Sender: TObject);
+var
+   fmNewFee: TfrmNewFee;
+   ns : Outlook2000._NameSpace;
+   item: IDispatch;
+   entryIds: TStringList;
+   StoreId: olevariant;
+   i: integer;
+begin
+   if Assigned(fmNewFee) then
+   begin
+      FreeAndNil(fmNewFee);
+   end;
+
+   ns := nil;
+   try
+      ns := OutlookApp.GetNamespace('MAPI');
+      entryIds := TstringList.Create;
+      item := ns.GetItemFromID(entryIds.Strings[i], StoreId);
+      fmNewFee := TfrmNewFee.Create(nil);
+      try
+         fmNewFee.ShowModal;
+      finally
+         fmNewFee.Free;
+      end;
+   finally
+      FreeAndNil(ns);
+      FreeAndNil(entryIds);
+   end;
+end;
+
+procedure TAddInModule.adxOutlookAppEventsNewMailEx(ASender: TObject;
+  const EntryIDCollection: WideString);
+var
+   Mail: Outlook2000.MailItem;
+   ns : Outlook2000._NameSpace;
+   item: IDispatch;
+   i: integer;
+   entryIds: TStringList;
+   obj: olevariant;
+   StoreId: olevariant;
+   IFolderSent: Outlook2000.MAPIFolder;
+begin
+   try
+      ns := nil;
+      obj := null;
+      try
+         WriteLog('start adxOutlookAppEventsNewMailEx');
+         FreeAndNil(dmSaveDoc);
+         if (not Assigned(dmSaveDoc)) then
+            dmSaveDoc := TdmSaveDoc.Create(Application);
+//         if dmSaveDoc.orsInsight.Connected = False then dmSaveDoc.GetUserID;
+         ns := OutlookApp.GetNamespace('MAPI');
+         entryIds := TstringList.Create;
+         Split(EntryIDCollection, ',',entryIds);
+         for i := 0 to entryIds.Count - 1 do
+         begin
+            try
+               if (not VarIsNull(StoreId)) then
+               begin
+                  try
+                     item := ns.GetItemFromID(entryIds.Strings[i], StoreId);
+                  finally
+                     if Assigned(Item) then
+                     begin
+                        item.QueryInterface(IID__MailItem, Mail);
+                        if (Assigned(Mail)) then
+                        begin
+                           IFolderSent := Mail.Parent as Outlook2000.MAPIFolder;
+                           if (Assigned(Mail)) then
+                           begin
+                              try
+                                 WriteLog('about to start processing email after adxOutlookAppEventsNewMailEx = ' + Mail.Subject);
+                                 SentMessage(Mail);
+                                 WriteLog('email saved');
+                              finally
+                                 WriteLog('cleanup');
+                                 Mail := nil;
+                              end;
+                           end;
+                        end;
+                     end;
+                  end;
+               end;
+            finally
+               WriteLog('set item to NIL');
+               if Assigned(item) then
+                  item := nil;
+            end;
+         end;
+      finally
+         WriteLog('set namespace to NIL');
+         if Assigned(IFolderSent) then
+           IFolderSent := nil;
+         ns := nil;
+      end;
+   except
+      WriteLog('Exception with NewMailEx event');
+   end;
+end;
+
+procedure TAddInModule.adxRibbonContextMenu1Controls0Click(Sender: TObject;
+  const RibbonControl: IRibbonControl);
+begin
+   DoSave;
+end;
+
+procedure TAddInModule.adxRibbonContextMenuApptControls1Click(Sender: TObject;
+  const RibbonControl: IRibbonControl);
+begin
+   ConvertApptToFee;
+end;
+
+procedure TAddInModule.ConvertApptToFee;
+var
+   fmNewFee: TfrmNewFee;
+   ns : Outlook2010.NameSpace;
+   item: IDispatch;
+   StoreId: OLEVariant;
+   i: OLEVariant;
+   sel: selection;
+   folder: Outlook2010.MAPIFolder;
+   Appointment: Outlook2010.AppointmentItem;
+   s: widestring;
+begin
+   try
+      if Assigned(fmNewFee) then
+      begin
+         FreeAndNil(fmNewFee);
+      end;
+
+      try
+         folder := ol2010.GetNamespace('MAPI').GetDefaultFolder(olFolderCalendar);
+         i := 1;
+         sel := ol2010.ActiveExplorer.Selection;
+         Appointment := AppointmentItem(sel.Item(1));
+         s := Appointment.Subject;
+
+         if AnsiPos('Converted to Fee', Appointment.Subject) = 0 then
+         begin
+            fmNewFee := TfrmNewFee.Create(nil);
+            fmNewFee.sSubject := Appointment.Subject;
+            fmNewFee.nUnits := FloatToStrF((((Appointment.End_ - Appointment.Start)*24)*60) /60*10, ffNumber, 0,0 );
+            try
+               if fmNewFee.ShowModal = mrOk then
+               begin
+                  Appointment.Subject := Appointment.Subject + ' - Converted to Fee';
+                  Appointment.Save;
+               end;
+            finally
+               fmNewFee.Free;
+            end;
+         end
+         else
+            MessageDlg('Appointment already converted to Fee', mtInformation, [mbOk], 0, mbOk)
+      finally
+         FreeAndNil(ns);
+      end;
+   except
+      WriteLog('Exception with ConvertApptoFee');
+   end;
+end;
+
+procedure TAddInModule.adxRibbonTabNewEmailControls0Controls0Click(
+  Sender: TObject; const RibbonControl: IRibbonControl);
+var
+ //  ns : NameSpace;
+   StoreId: olevariant;
+begin
+{   SentFromInsight := True;
+   ns := ol2010.GetNamespace('MAPI');
+   ns.SendAndReceive(false);   }
+end;
+
+procedure TAddInModule.adxRibbonTabReadEmailControls0Controls0Click(
+  Sender: TObject; const RibbonControl: IRibbonControl);
+begin
+   DoSave;
+end;
+
+procedure TAddInModule.adxRibbonTabWordControls0Controls0Click(Sender: TObject;
+  const RibbonControl: IRibbonControl);
+begin
+   DoSave;
+end;
+
+procedure TAddInModule.CommandBarSpeediDocsControls0Click(Sender: TObject);
+begin
+   DoSave;
+end;
+
+procedure TAddInModule.DoSave;
+var
+   i, Count,
+   LAppType: Integer;
+   IProps: DocumentProperties;
+   IProp: DocumentProperty;
+   PropValue: OleVariant;
+   PropName: widestring;
+   item: IDispatch;
+   LIMail: Outlook2000.MailItem;
+   IContact: ContactItem;
+   IAppointment: AppointmentItem;
+   sel: Outlook2000.Selection;
+   lSubject: string;
+   ReceivedDate: TDateTime;
+   WordProps: array[1..11] of TWordProperties;
+   ExcelProps: array[1..11] of TWordProperties;
+   fmSaveDocDetails: TfrmSaveDocDetails;
+begin
+//   frmSaveDocDetails.Free;
+   try
+      case HostType of
+         ohaExcel:
+               begin
+                  if ExcelApp.Workbooks.Count > 0 then
+                  begin
+                     LAppType := 1;
+                     ExcelApp.ActiveWorkbook.CustomDocumentProperties.QueryInterface(IID_DocumentProperties, IProps);
+                     if Assigned(IProps) then
+                     try
+                        IProps.Get_Count(Count);
+                        for i := 1 to Count do
+                        begin
+                           IProps.Get_Item(i, adxLCID, IProp);
+                           if Assigned(IProp) then
+                           try
+                              IProp.Get_Value(adxLCID, PropValue);
+                              IProp.Get_Name(adxLCID, PropName);
+                              ExcelProps[i].PropName := PropName;
+                              ExcelProps[i].PropValue := PropValue;
+                           finally
+                              IProp := nil;
+                           end;
+                        end;
+                     finally
+                        IProps := nil;
+                     end;
+                  end;
+               end;
+         ohaWord:
+               begin
+                 LAppType := 2;
+                 WordApp.ActiveDocument.CustomDocumentProperties.QueryInterface(IID_DocumentProperties, IProps);
+                 if Assigned(IProps) then
+                 try
+                     IProps.Get_Count(Count);
+                     for i := 1 to 11 {Count - 1} do
+                     begin
+                        IProps.Get_Item(i, adxLCID, IProp);
+                        if Assigned(IProp) then
+                        try
+                           IProp.Get_Value(adxLCID, PropValue);
+                           IProp.Get_Name(adxLCID,PropName);
+                           WordProps[i].PropName := PropName;
+                           WordProps[i].PropValue := PropValue;
+                        finally
+                           IProp := nil;
+                        end;
+                     end;
+                 finally
+                     IProps := nil;
+                 end;
+               end;
+         ohaOutlook:
+            begin
+               LAppType := 3;
+               try
+                  sel := OutlookApp.ActiveExplorer.Selection;
+               except
+               //
+               end;
+
+               if (sel <> nil) then
+               begin
+                  for I := 1 to OutlookApp.ActiveExplorer.Selection.Count do
+                  begin
+                     item := sel.Item(I);
+                     item.QueryInterface(IID__MailItem, LIMail);
+                     if LIMail <> nil then
+                     begin
+                        lSubject := LIMail.Subject;
+                        ReceivedDate := LIMail.ReceivedTime;
+                     end
+                     else
+                     begin
+                        Exit;
+{                        item.QueryInterface(IID__AppointmentItem, IAppointment);
+                        if IAppointment <> nil then
+                           Exit;
+
+                        item.QueryInterface(IID__ContactItem, IContact);
+                        if IContact <> nil then
+                           lSubject := IContact.FullName;}
+                     end;
+
+{                     if (not Assigned(dmSaveDoc)) then
+                         dmSaveDoc := TdmSaveDoc.Create(Application);
+}
+                     try
+                        FreeAndNil(fmSaveDocDetails);
+                        fmSaveDocDetails := TfrmSaveDocDetails.Create(nil);
+                        fmSaveDocDetails.AppType := LAppType;
+
+                        fmSaveDocDetails.MailSubject := lSubject;
+                        fmSaveDocDetails.ReceivedDate := ReceivedDate;
+                        fmSaveDocDetails.TimeNarration := DateTimeToStr(ReceivedDate) + ' ' + lSubject;
+//                        SetOutlookApp(OutlookApp);
+
+                        fmSaveDocDetails.LadxLCID := adxLCID;
+                        fmSaveDocDetails.IMail := LIMail;
+
+                        fmSaveDocDetails.ShowModal;
+                     finally
+                        FreeAndNil(fmSaveDocDetails);
+
+                        LIMail := nil;
+{                        if (Assigned(dmSaveDoc)) then
+                        begin
+                           dmSaveDoc.Free;
+                           dmSaveDoc := nil;
+                        end;}
+                     end;
+                  end;
+               end;
+            end;
+         ohaPowerPoint:
+            begin
+               PowerPointApp.ActivePresentation.CustomDocumentProperties.QueryInterface(IID_DocumentProperties, IProps);
+               LAppType := 4;
+               if Assigned(IProps) then
+               try
+                  IProps.Get_Count(Count);
+                  for i := 1 to Count do
+                  begin
+                     IProps.Get_Item(i, adxLCID, IProp);
+                     if Assigned(IProp) then
+                     try
+                        IProp.Get_Value(adxLCID, PropValue);
+//                           ShowMessage(Value);
+                     finally
+                        IProp := nil;
+                     end;
+                  end;
+               finally
+                  IProps := nil;
+               end;
+            end;
+      end;
+
+      if (LAppType <> 3) then
+      begin
+         if (Not assigned(fmSaveDocDetails)) then
+            fmSaveDocDetails := TfrmSaveDocDetails.Create(self);
+
+         fmSaveDocDetails.AppType := LAppType;
+
+         if LAppType = 2 then
+         begin
+            for I := 1 to 11 do
+            begin
+               fmSaveDocDetails.AWordProps[I].PropName := WordProps[i].PropName;
+               fmSaveDocDetails.AWordProps[I].PropValue := WordProps[i].PropValue;
+            end;
+            SetWordApp(wrd2010);
+         end;
+
+         if LAppType = 1 then
+         begin
+            for I := 1 to 11 do
+            begin
+               fmSaveDocDetails.AWordProps[i].PropName := ExcelProps[i].PropName;
+               fmSaveDocDetails.AWordProps[i].PropValue := ExcelProps[i].PropValue;
+            end;
+            SetExcelApp(ex2010);
+         end;
+
+         fmSaveDocDetails.LadxLCID := adxLCID;
+         try
+            fmSaveDocDetails.ShowModal;
+         finally
+            fmSaveDocDetails.Free;
+            fmSaveDocDetails := nil;
+         end;
+      end;
+   except
+      WriteLog('Exception with DoSave');
+   end;
+end;
+
+procedure TAddInModule.RibbonTabSpeediDocsControls0Controls0Click(
+  Sender: TObject; const RibbonControl: IRibbonControl);
+var
+   Control: IRibbonControl;
+   Document: _Document;
+   IWindow: IDispatch;
+begin
+   try
+      // Word raises an exception if there's no document open
+      IWindow := HostApp.ActiveWindow;
+   except
+   end;
+   try
+      if IWindow <> nil then
+         DoSave;
+   finally
+      IWindow := nil;
+   end;
+end;
+
+procedure TAddInModule.RibbonTabSpeediDocsControls0Controls0Controls0Click(
+  Sender: TObject; const RibbonControl: IRibbonControl);
+var
+   bLoginSetup: integer;
+   frmLoginSetup: TfrmLoginSetup;
+begin
+   try
+      try
+         if Assigned(frmLoginSetup) then
+            frmLoginSetup := nil;
+         frmLoginSetup := TfrmLoginSetup.Create(nil);
+         if HostType = ohaOutlook then
+            frmLoginSetup.IsOutlook := True;
+         bLoginSetup := frmLoginSetup.ShowModal;
+      finally
+         frmLoginSetup.Free;
+         frmLoginSetup := nil;
+         if Assigned(dmSaveDoc) then
+         begin
+            if dmSaveDoc.orsInsight.Connected = True then
+               dmSaveDoc.orsInsight.Disconnect;
+         end
+         else
+            dmSaveDoc := TdmSaveDoc.Create(Application );
+         if dmSaveDoc.orsInsight.Connected = False then dmSaveDoc.GetUserID();
+      end;
+   except
+      WriteLog('Exception with call to LoginSetup');
+   end;
+end;
+
+procedure TAddInModule.RibbonTabSpeediDocsControls1Controls1Click(
+  Sender: TObject; const RibbonControl: IRibbonControl);
+var
+   fmNewFee: TfrmNewFee;
+begin
+   if Assigned(fmNewFee) then
+   begin
+      fmNewFee := nil;
+   end;
+
+   fmNewFee := TfrmNewFee.Create(nil);
+   try
+      fmNewFee.ShowModal;
+   finally
+      fmNewFee.Free;
+   end;
+end;
+
+procedure TAddInModule.RibbonTabSpeediDocsControls1Controls2Click(
+  Sender: TObject; const RibbonControl: IRibbonControl);
+begin
+   DoSavePrecedent;
+end;
+
+procedure TAddInModule.RibbonTabSpeediDocsControls1Controls3Click(
+  Sender: TObject; const RibbonControl: IRibbonControl);
+var
+   fmFieldList: TfrmFieldList;
+begin
+   if Assigned(fmFieldList) then
+   begin
+      fmFieldList := nil;
+   end;
+
+   fmFieldList := TfrmFieldList.Create(nil);
+   try
+      fmFieldList.SetWordApp(WordApp);
+      fmFieldList.Show;
+   finally
+       //
+   end;
+end;
+
+procedure TAddInModule.RibbonTabSpeediDocsControls2Controls0Click(
+  Sender: TObject; const RibbonControl: IRibbonControl);
+var
+   lnmatter,
+   lDocID,
+   i,
+   RecID,
+   x: integer;
+   FFileID,
+   lPath,
+   lDocName,
+   s: string;
+   fmDocList: TfrmDocList;
+   Mail: Outlook2000.MailItem;
+   sel: Outlook2000.Selection;
+   item: IDispatch;
+   lAttachments: Outlook2000.Attachments;
+begin
+   if Assigned(fmDocList) then
+   begin
+      fmDocList := nil;
+   end;
+
+   case HostType of
+      ohaOutlook:
+         begin
+            fmDocList := TfrmDocList.Create(nil);
+            try
+               if (fmDocList.ShowModal = mrOK) then
+               begin
+                  lnMatter := dmSaveDoc.qryDocs.FieldByName('NMATTER').AsInteger;
+                  FFileID  := dmSaveDoc.qryDocs.FieldByName('FILEID').AsString;
+                  lDocID   := dmSaveDoc.qryDocs.FieldByName('DOCID').AsInteger;
+                  lPath    := dmSaveDoc.qryDocs.FieldByName('PATH').AsString;
+                  lDocName := dmSaveDoc.qryDocs.FieldByName('DOC_NAME').AsString;
+                  try
+                     sel := OutlookApp.ActiveExplorer.Selection;
+                  except
+                  end;
+
+                  if sel <> nil then
+                  begin
+                     Item := sel.Item(1);
+
+                     Item.QueryInterface(IID__MailItem, Mail);
+                     if (Mail <> nil) then
+                     begin
+                        Mail.Attachments.Add(lPath, olByValue, 1, lDocName);
+                        Mail.Save;
+                     end;
+                  end;
+               end;
+            finally
+               dmSaveDoc.qryDocs.Close;
+               fmDocList.Free;
+               fmDocList := nil;
+            end;
+         end;
+   end;
+end;
+
+procedure TAddInModule.RibbonTabSpeediDocsControls4Controls0Click(
+  Sender: TObject; const RibbonControl: IRibbonControl);
+var
+   nmatter: integer;
+   FFileID: string;
+   fmMtrSearch: TfrmMtrSearch;
+begin
+   if Assigned(fmMtrSearch) then
+   begin
+      fmMtrSearch := nil;
+   end;
+   fmMtrSearch :=TfrmMtrSearch.Create(nil);
+   try
+      if (fmMtrSearch.ShowModal = mrOK) then
+      begin
+//         btnEditMatter.Text := frmMtrSearch.tvMattersFILEID.EditValue;   // dmSaveDoc.qryMatters.FieldByName('fileid').AsString;   //  dmSaveDoc.qryMatters.FieldByName('fileid').AsString;
+         nMatter := fmMtrSearch.tvMattersNMATTER.EditValue;  // dmSaveDoc.qryMatters.FieldByName('nmatter').AsInteger;
+//         cmbAuthor.EditValue := TableString('MATTER','NMATTER',nMatter,'AUTHOR');
+         FFileID := fmMtrSearch.tvMattersNMATTER.EditValue; ;
+      end;
+   finally
+      fmMtrSearch.Free;
+   end;
+end;
+
+procedure TAddInModule.DoItemSend(ASender: TObject; const Item: IDispatch;
+  var Cancel: WordBool);
+var
+   Mail: Outlook2000.MailItem;
+   IContact: ContactItem;
+   IAppointment: AppointmentItem;
+   IMeetingItem: MeetingItem;
+begin
+   if Assigned(Item) then
+   begin
+      Item.QueryInterface(IID__MailItem, Mail);
+      if Assigned(Mail) then
+      begin
+         if (not Assigned(dmSaveDoc)) then
+             dmSaveDoc := TdmSaveDoc.Create(Application);
+         try
+            if dmSaveDoc.orsInsight.Connected = False then dmSaveDoc.GetUserID;
+            SentMessage(Mail);
+         finally
+            Mail := nil;
+         end;
+      end
+      else
+      begin
+         exit;
+         {try
+            item.QueryInterface(IID__AppointmentItem, IAppointment);
+            if IAppointment <> nil then
+                Exit;
+
+            item.QueryInterface(IID__ContactItem, IContact);
+            if IContact <> nil then
+               Exit;
+
+{        if MessageDlg('Save Message '+ Mail.Subject +' in Insight?',mtConfirmation, [mbYes, mbNo], 0, mbYes) = mrYes then
+        begin
+           SentMessage(Mail);
+        end;    }
+
+{         finally
+            Mail := nil;
+         end;  }
+      end;
+   end;
+end;
+
+procedure TAddInModule.DoSavePrecedent;
+var
+   i, Count,
+   LAppType: Integer;
+   IProps: DocumentProperties;
+   IProp: DocumentProperty;
+   PropValue: OleVariant;
+   PropName: widestring;
+   item: IDispatch;
+   LIMail: MailItem;
+   IContact: ContactItem;
+   sel: Selection;
+   lSubject: string;
+   ReceivedDate: TDateTime;
+   WordProps: array[1..11] of TWordProperties;
+begin
+   case HostType of
+      ohaExcel:
+            begin
+               if ExcelApp.Workbooks.Count > 0 then
+               begin
+                  LAppType := 1;
+                  ExcelApp.ActiveWorkbook.CustomDocumentProperties.QueryInterface(IID_DocumentProperties, IProps);
+                  if Assigned(IProps) then
+                  try
+                     IProps.Get_Count(Count);
+                     for i := 1 to Count do
+                     begin
+                        IProps.Get_Item(i, adxLCID, IProp);
+                        if Assigned(IProp) then
+                        try
+                           IProp.Get_Value(adxLCID, PropValue);
+ //                          ShowMessage(Value);
+                        finally
+                           IProp := nil;
+                        end;
+                     end;
+                  finally
+                     IProps := nil;
+                  end;
+               end;
+            end;
+      ohaWord:
+            begin
+              LAppType := 2;
+              WordApp.ActiveDocument.CustomDocumentProperties.QueryInterface(IID_DocumentProperties, IProps);
+              if Assigned(IProps) then
+              try
+                  IProps.Get_Count(Count);
+                  for i := 1 to 11 {Count - 1} do
+                  begin
+                     IProps.Get_Item(i, adxLCID, IProp);
+                     if Assigned(IProp) then
+                     try
+                        IProp.Get_Value(adxLCID, PropValue);
+                        IProp.Get_Name(adxLCID,PropName);
+                        WordProps[i].PropName := PropName;
+                        WordProps[i].PropValue := PropValue;
+                     finally
+                        IProp := nil;
+                     end;
+                  end;
+              finally
+                  IProps := nil;
+              end;
+            end;
+   end;
+
+   if (LAppType <> 3) then
+   begin
+      frmSaveprecDetails := TfrmSaveprecDetails.Create(Self);
+      frmSaveprecDetails.AppType := LAppType;
+
+      if LAppType = 2 then
+      begin
+         for I := 1 to 11 do
+         begin
+            frmSaveprecDetails.AWordProps[i].PropName := WordProps[i].PropName;
+            frmSaveprecDetails.AWordProps[i].PropValue := WordProps[i].PropValue;
+         end;
+         SetWordApp(wrd2010);
+      end;
+
+      frmSaveprecDetails.LadxLCID := adxLCID;
+      try
+         frmSaveprecDetails.ShowModal;
+      finally
+         frmSaveprecDetails.Free;
+      end;
+   end;
+end;
+
+procedure TAddInModule.WriteLog(const AMessage: string);
+var
+   stream: TFileStream;
+   value,
+   newName,
+   formattedDateTime: string;
+   FTextFile : TextFile;
+   FileHandle: integer;
+   FileSize: DWord;
+begin
+   try
+      if LogFile = '' then
+         GetLogFilePath;
+      if (bLogFile = True) and (LogFile <> '') then
+      begin
+         if AMessage = '' then exit;
+
+         try
+            EnterCriticalSection(CS);
+            if (DirectoryExists(ExtractFileDir(LogFile)) = False) then
+               CreateDir(ExtractFileDir(LogFile));
+            AssignFile(FTextFile, LogFile);
+            if (FileExists(LogFile) = True) then
+               Append(FTextFile)
+            else
+               Rewrite(FTextFile);
+
+            try
+               value := DateTimeToStr(Now()) + ' - ' + AMessage;
+               WriteLn(FTextFile, value);
+            finally
+                CloseFile(FTextFile);
+            end;
+         finally
+            if (IsFileInUse(LogFile) = True) then
+               CloseFile(FTextFile);
+            LeaveCriticalSection(CS);
+         end;
+
+         FileHandle := FileOpen(LogFile, fmOpenRead);
+         try
+            FileSize := GetFileSize(FileHandle, nil);
+         finally
+            FileClose(FileHandle);
+            if (FileSize > LOGFILESIZE) then
+            begin
+               DateTimeToString(formattedDateTime, 'ddmmyy_hhnnss', Now());
+               newName := ChangeFileExt(LogFile, formattedDateTime+'.log');
+               RenameFile(LogFile, newName);
+//                  ShowMessage('Unit1.dcu rename failed with error : '+ IntToStr(GetLastError));
+            end;
+         end;
+      end;
+   except
+   //
+   end;
+end;
+
+
+initialization
+  TadxFactory.Create(ComServer, TcoSpeediDocs, CLASS_coSpeediDocs, TAddInModule);
+
+  dxInitialize();
+
+  {initialize my Critical section.}
+   InitializeCriticalSection(CS);
+
+
+finalization
+  // unload
+  dxFinalize();
+  {finalize my Critical section.}
+   DeleteCriticalSection(CS);
+end.

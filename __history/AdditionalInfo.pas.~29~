@@ -1,0 +1,211 @@
+unit AdditionalInfo;
+
+interface
+
+uses
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Vcl.Buttons, Office2000, Outlook2000,
+  Vcl.ComCtrls, comobj, registry;
+
+const
+   scxOutlookApp     = 'Outlook.Application';
+   scxWordApp        = 'Word.Application';
+   sResilienceKey    = 'SOFTWARE\Microsoft\Office\%s\Outlook\Resiliency\DoNotDisableAddinList';
+   sAlwaysLoadKey    = 'SOFTWARE\Microsoft\Office\Outlook\Addins\SpeediDocs.coSpeediDocs';
+
+type
+  TfrmAdditionalInfo = class(TForm)
+    BitBtn1: TBitBtn;
+    Memo1: TMemo;
+    GroupBox1: TGroupBox;
+    txtRegResiliency: TLabel;
+    txtAlwaysLoad: TLabel;
+    btnResilience: TButton;
+    btnAlwaysLoad: TButton;
+    Label1: TLabel;
+    procedure FormShow(Sender: TObject);
+    procedure BitBtn1Click(Sender: TObject);
+    procedure btnResilienceClick(Sender: TObject);
+    procedure btnAlwaysLoadClick(Sender: TObject);
+  private
+    { Private declarations }
+    FisOutlook: boolean;
+    sVersionKey: string;
+  public
+    { Public declarations }
+    property isOutlook: boolean read FisOutlook write FisOutlook;
+  end;
+
+var
+  frmAdditionalInfo: TfrmAdditionalInfo;
+
+implementation
+
+{$R *.dfm}
+
+procedure TfrmAdditionalInfo.BitBtn1Click(Sender: TObject);
+begin
+   Close;
+end;
+
+procedure TfrmAdditionalInfo.btnAlwaysLoadClick(Sender: TObject);
+var
+   regSDocs: TRegistry;
+begin
+   try
+      regSDocs := TRegistry.Create(KEY_WRITE);
+      regSDocs.RootKey := HKEY_CURRENT_USER;
+      regSDocs.OpenKey(sAlwaysLoadKey, true);
+      regSDocs.WriteInteger('LoadBehavior',3);
+   finally
+      regSDocs.CloseKey;
+      regSDocs.Free;
+      btnResilience.Visible := False;
+      txtAlwaysLoad.Caption := 'Outlook Addin Always Load key = '+ sAlwaysLoadKey;
+   end;
+
+end;
+
+procedure TfrmAdditionalInfo.btnResilienceClick(Sender: TObject);
+var
+   regSDocs: TRegistry;
+begin
+   try
+      regSDocs := TRegistry.Create(KEY_WRITE);
+      regSDocs.RootKey := HKEY_CURRENT_USER;
+      regSDocs.OpenKey(sResilienceKey, true);
+      regSDocs.WriteInteger('SpeediDocs.coSpeediDocs',1);
+   finally
+      regSDocs.CloseKey;
+      regSDocs.Free;
+      btnResilience.Visible := False;
+   end;
+end;
+
+procedure TfrmAdditionalInfo.FormShow(Sender: TObject);
+var
+    sBuild,
+    sVersion,
+    sFullVersion: string;
+    oApp: variant;
+    regSDocs: TRegistry;
+    RegKey: DWORD;
+begin
+   if isOutlook then
+   begin
+      try
+         try
+            OApp := GetActiveOleObject(scxOutlookApp);
+         except
+            try
+               OApp := CreateOleObject(scxOutlookApp);
+            finally
+            end;
+         end;
+      finally
+   // just in case it was created, quit and unassign
+         sFullVersion := oApp.Version;
+//         OApp.Application.Quit;
+         OApp := Unassigned;
+      end;
+   end;
+
+   sBuild := copy(sFullVersion, 0, 4);
+// 'Get major build only to make it easier to determine version
+   if sBuild = '7.0' then
+      sVersion := '97' + ' ('+sFullVersion+')';   //'Outlook
+   if sBuild =  '8.0' then
+      sVersion := '98' + ' ('+sFullVersion+')';   //'Outlook
+   if sBuild =  '9.0' then
+      sVersion := '2000' + ' ('+sFullVersion+')'; //'Outlook
+   if sBuild =  '10.0' then
+      sVersion := '2002' + ' ('+sFullVersion+')'; //'Outlook
+   if sBuild =  '11.0' then
+      sVersion := '2003' + ' ('+sFullVersion+')'; //'Outlook & InfoPath
+   if sBuild =  '12.0' then
+      sVersion := '2007' + ' ('+sFullVersion+')'; //'Outlook & InfoPath
+   if sBuild =  '14.0' then
+      sVersion := '2010' + ' ('+sFullVersion+')'; //'Outlook
+   if sBuild =  '15.0' then
+      sVersion := '2013' + ' ('+sFullVersion+')'; //'Outlook
+   if sversion = '' then
+      sVersion := 'Unable to establish Version.';
+   //    MsgBox 'Outlook Build: ' & oApp.Version & vbNewLine & 'Outlook Version: ' & sVersion, _
+   if isOutlook then
+      Memo1.Lines.Add('Outlook version: '+sVersion );
+
+   try
+      regSDocs := TRegistry.Create(KEY_READ);
+      regSDocs.RootKey := HKEY_CURRENT_USER;
+      sVersionKey := Format(sResilienceKey, [sBuild]);
+
+      if not regSDocs.KeyExists(sVersionKey) then
+      begin
+         txtRegResiliency.Caption := 'Outlook Addin Resiliency key is not present';
+         btnResilience.Visible := True;
+      end
+      else
+      begin
+         try
+            regSDocs.OpenKey(sVersionKey, false);
+            RegKey := regSDocs.ReadInteger('SpeediDocs.coSpeediDocs');
+            txtRegResiliency.Caption := 'Outlook Addin Resiliency key = '+ sVersionKey;
+         except
+            txtRegResiliency.Caption := 'Outlook Addin Resiliency key is not present';
+            btnResilience.Visible := True;
+         end;
+      end;
+      regSDocs.CloseKey;
+
+      if not regSDocs.KeyExists(sAlwaysLoadKey) then
+      begin
+         txtAlwaysLoad.Caption := 'Outlook Addin Always Load key is not present';
+         btnAlwaysLoad.Visible := True;
+      end
+      else
+      begin
+         try
+            regSDocs.OpenKey(sAlwaysLoadKey, false);
+            RegKey := regSDocs.ReadInteger('LoadBehavior');
+            txtAlwaysLoad.Caption := 'Outlook Addin Always Load key = '+ sAlwaysLoadKey;
+         except
+            txtRegResiliency.Caption := 'Outlook Addin Always Load key is not present';
+            btnAlwaysLoad.Visible := True;
+         end;
+      end;
+
+
+   finally
+      regSDocs.CloseKey;
+      regSDocs.Free;
+   end;
+{
+Private Sub Command2_Click()
+'Format for most other Office Apps
+'MS Access used for this example
+    Dim oApp As Access.Application
+    Dim sVersion As String
+    Set oApp = New Access.Application
+    Select Case oApp.Version
+        Case '7.0'
+            sVersion = '95'
+        Case '8.0'
+            sVersion = '97'
+        Case '9.0'
+            sVersion = '2000'
+        Case '10.0'
+            sVersion = '2002'
+        Case '11.0'
+            sVersion = '2003'
+        Case '12.0'
+            sVersion = '2007'
+        Case '14.0'
+            sVersion = '2010'
+        Case Else
+            sVersion = 'Too Old!'
+    End Select
+//    MsgBox 'Outlook Build: ' & oApp.Version & vbNewLine & 'Outlook Version: ' & sVersion, _
+//    vbOKOnly + vbInformation, 'Office Version'     }
+end;
+
+end.

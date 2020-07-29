@@ -1,0 +1,122 @@
+BDE/IBX/ADO/ODAC/SDAC/MyDAC/IBDAC Migration Wizard log
+
+Created at: 11/11/2012 3:27:35 PM
+
+Initializing unit list
+
+Creating backup folder
+
+Allocating temporary folder
+
+Processing file: D:\SpeediDocs\dmSaveDoc.pas
+
+No changes
+
+Processing file: D:\SpeediDocs\ExcelUnit.pas
+
+No changes
+
+Processing file: D:\SpeediDocs\functions.pas
+
+No changes
+
+Processing file: D:\SpeediDocs\LoginDetails.pas
+
+No changes
+
+Processing file: D:\SpeediDocs\main.pas
+
+No changes
+
+Processing file: D:\SpeediDocs\MatterSearch.pas
+
+No changes
+
+Processing file: D:\SpeediDocs\NewFee.pas
+
+14 change(s)
+
+Processing file: D:\SpeediDocs\OutlookUnit.pas
+
+No changes
+
+Processing file: D:\SpeediDocs\PowerPointUnit.pas
+
+No changes
+
+Processing file: D:\SpeediDocs\SaveDoc.pas
+
+No changes
+
+Processing file: D:\SpeediDocs\SavedocDetails.pas
+
+No changes
+
+Processing file: D:\SpeediDocs\savedocdtls.pas
+
+No changes
+
+Processing file: D:\SpeediDocs\SaveDocFunc.pas
+
+No changes
+
+Processing file: D:\SpeediDocs\SpeediDocs.dpr
+
+No changes
+
+Processing file: D:\SpeediDocs\SpeediDocs_IMPL.pas
+
+No changes
+
+Processing file: D:\SpeediDocs\SpeediDocs_TLB.pas
+
+No changes
+
+Processing file: D:\SpeediDocs\WordUnit.pas
+
+No changes
+
+Processing file: D:\SpeediDocs\dmSaveDoc.DFM
+
+No changes
+
+Processing file: D:\SpeediDocs\LoginDetails.DFM
+
+No changes
+
+Processing file: D:\SpeediDocs\main.DFM
+
+No changes
+
+Processing file: D:\SpeediDocs\MatterSearch.DFM
+
+No changes
+
+Processing file: D:\SpeediDocs\NewFee.DFM
+
+13 change(s)
+
+Processing file: D:\SpeediDocs\SaveDoc.DFM
+
+No changes
+
+Processing file: D:\SpeediDocs\SavedocDetails.DFM
+
+No changes
+
+Processing file: D:\SpeediDocs\savedocdtls.DFM
+
+No changes
+
+Processing file: D:\SpeediDocs\SpeediDocs_IMPL.DFM
+
+No changes
+
+Replacing original files with changed versions
+
+Backup file: D:\SpeediDocs\RBackup\RExpert.reu
+
+Removing temporary folder
+
+Replace procedure was performed sucessfully.
+

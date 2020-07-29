@@ -1,0 +1,37 @@
+[
+  uuid(9F4133C2-47CA-4511-A74A-FA7A38955FEF),
+  version(1.0),
+  helpstring("SpeediDocs Library")
+
+]
+library SpeediDocs
+{
+
+  importlib("stdole2.tlb");
+
+  interface IcoSpeediDocs;
+  coclass coSpeediDocs;
+
+
+  [
+    uuid(888D05F7-E19C-40EE-AB71-78759EF6E977),
+    version(1.0),
+    helpstring("Dispatch interface for coSpeediDocs Object"),
+    dual,
+    oleautomation
+  ]
+  interface IcoSpeediDocs: IDispatch
+  {
+  };
+
+  [
+    uuid(404D7D9F-4CA1-4314-907C-8C8B6D5AB326),
+    version(1.0),
+    helpstring("coSpeediDocs Object")
+  ]
+  coclass coSpeediDocs
+  {
+    [default] interface IcoSpeediDocs;
+  };
+
+};

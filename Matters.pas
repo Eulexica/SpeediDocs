@@ -1,0 +1,1080 @@
+unit Matters;
+
+interface
+
+uses
+  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
+  Outlook2000, adxolFormsManager, Vcl.StdCtrls, Vcl.ComCtrls, Vcl.ExtCtrls,
+  Data.DB, VirtualTrees, Vcl.ImgList, ActiveX, ComObj, ShlObj,
+  Math, MemDS, DBAccess, Ora, OraSmart, Vcl.Menus, DragDrop, DropTarget,
+  DropComboTarget, ShellAPI;
+
+type
+   TFileContentsCallback = function(const Descriptor: TFileDescriptor; const medium: TStgMedium; Progress: Integer; MaxProgress: Integer): Boolean;
+
+  type
+   PTaskData = ^TTaskData;
+   TTaskData = record
+      Text: WideString;
+      isOpened: Boolean;
+      ImageIndex: Integer;
+      Matter: Integer;
+      DocID: integer;
+      DocText: WideString;
+      DocImageIndex: integer;
+      Path: WideString;
+   end;
+
+type
+  TadxfrmMatters = class(TadxOlForm)
+    Panel1: TPanel;
+    lblMore: TLabel;
+    vtsMatterList: TVirtualStringTree;
+    ilstDocuments: TImageList;
+    qryDocDetails: TSmartQuery;
+    PopupMenu1: TPopupMenu;
+    Refresh1: TMenuItem;
+    procedure adxOlFormCreate(Sender: TObject);
+    procedure vtsMatterListGetText(Sender: TBaseVirtualTree;
+      Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType;
+      var CellText: string);
+    procedure vtsMatterListGetImageIndex(Sender: TBaseVirtualTree;
+      Node: PVirtualNode; Kind: TVTImageKind; Column: TColumnIndex;
+      var Ghosted: Boolean; var ImageIndex: Integer);
+    procedure vtsMatterListDragOver(Sender: TBaseVirtualTree; Source: TObject;
+      Shift: TShiftState; State: TDragState; Pt: TPoint; Mode: TDropMode;
+      var Effect: Integer; var Accept: Boolean);
+    procedure vtsMatterListDragDrop(Sender: TBaseVirtualTree; Source: TObject;
+      DataObject: IDataObject; Formats: TFormatArray; Shift: TShiftState;
+      Pt: TPoint; var Effect: Integer; Mode: TDropMode);
+    procedure vtsMatterListDblClick(Sender: TObject);
+    procedure lblMoreMouseEnter(Sender: TObject);
+    procedure lblMoreMouseLeave(Sender: TObject);
+    procedure lblMoreClick(Sender: TObject);
+    procedure Refresh1Click(Sender: TObject);
+
+  private
+    { Private declarations }
+    FFileList: TStringList;
+    tmpdir: string;
+    FURL: boolean;
+
+    function AddNodeData(AVST: TCustomVirtualStringTree; ANode: PVirtualNode;
+                        ARecord: TTaskData): PVirtualNode;
+    procedure InsertData(Sender: TVirtualStringTree; DataObject: IDataObject;
+                        Formats: TFormatArray; Effect: Integer;
+                        Mode: TVTNodeAttachMode; AStrList: TStringList);
+    function AddVSTStructure(AVST: TCustomVirtualStringTree; ANode: PVirtualNode; ARecord: TTaskData): PVirtualNode;
+
+    procedure DoSave(FileName: string; ANMatter: integer; bEmail: boolean = False);
+    procedure DoSaveEmail(AMail: MailItem; ANMatter: integer; var ADocID: integer; var ASavedPath: string; bEmail: boolean = False);
+ //   procedure GetFileListFromObj(const DataObj: IDataObject; const FileList: TStrings);
+//    function HandleOleDrop(DataObject: IDataObject; var DropEffect: integer; FileContentsCallback: TFileContentsCallback): HResult;
+//    procedure GetFileListFromObj(const DataObj: IDataObject; FileList: TStringList);
+
+//    function FileContentsCallback(const Descriptor: TFileDescriptor; const medium: TStgMedium; Progress: Integer; MaxProgress: Integer): Boolean;
+//    function GetFileContents(DataObject: IDataObject; var Effect: integer; FileContentsCallback: TFileContentsCallback): HResult;
+      procedure CleanUpEmails;
+      procedure PopulateList;
+      procedure GetFileListFromObj(const DataObj: IDataObject; const FileList: TStrings);
+  protected
+    { Protected declarations }
+  public
+    { Public declarations }
+    ol2010: _Application;
+  published
+    { Published declarations }
+  end;
+
+
+{NOTE: The adxOlForm1 variable is intended for the exclusive use
+       by the TadxOlFormsCollectionItem Designer.
+       NEVER use this variable for other purposes.}
+var
+  adxfrmMatters : TadxfrmMatters;
+
+implementation
+
+uses
+   SaveDoc
+   ,SaveDocFunc
+   ,TypInfo
+   ,MatterSearch
+   ,OutlookUnit
+   ,SpeediDocs_IMPL;
+
+{$R *.DFM}
+
+var
+  CF_FILECONTENTS:  Integer;
+
+
+procedure TadxfrmMatters.adxOlFormCreate(Sender: TObject);
+begin
+   try
+      if Not Assigned(dmConnection) then
+      begin
+         dmConnection := TdmSaveDoc.Create(application);
+      end;
+      if dmConnection.orsInsight.Connected = False then dmConnection.GetUserID;
+      PopulateList;
+      tmpdir := IncludeTrailingPathDelimiter(GetEnvironmentVariable('TMP'));
+   except
+      //
+   end;
+end;
+
+procedure TadxfrmMatters.PopulateList;
+var
+   Node: PVirtualNode;
+   LTTaskData: TTaskData;
+begin
+   try
+      if Not Assigned(dmConnection) then
+      begin
+         dmConnection := TdmSaveDoc.Create(application);
+      end;
+      if dmConnection.orsInsight.Connected = False then dmConnection.GetUserID;
+      with dmConnection.qryMatterList do
+      begin
+         vtsMatterList.Clear;
+         Close;
+         ParamByName('p_author').AsString := dmConnection.UserID;
+         Open;
+//         VirtualStringTree1.RootNodeCount := dmConnection.qryMatterList.RecordCount;
+         // create tree
+         vtsMatterList.NodeDataSize := SizeOf(TTaskData);
+         vtsMatterList.BeginUpdate;
+         while not eof do
+         begin
+            LTTaskData.Text := FieldByName('matter_disp').AsString;
+            LTTaskData.Matter := FieldByName('NMatter').AsInteger;
+            LTTaskData.ImageIndex := 11;
+            Node := AddNodeData(vtsMatterList, nil, LTTaskData);
+            // add children
+            dmConnection.qryMatterDocs.Close;
+            dmConnection.qryMatterDocs.ParamByName('nmatter').AsInteger := LTTaskData.Matter;
+            dmConnection.qryMatterDocs.Open;
+            while (not dmConnection.qryMatterDocs.EOF) do
+            begin
+               LTTaskData.Text := dmConnection.qryMatterDocs.FieldByName('doc_name').AsString;
+               LTTaskData.DocID := dmConnection.qryMatterDocs.FieldByName('docid').AsInteger;
+               LTTaskData.ImageIndex := dmConnection.qryMatterDocs.FieldByName('imageindex').AsInteger;
+               LTTaskData.Path := dmConnection.qryMatterDocs.FieldByName('path').AsString;
+               AddNodeData(vtsMatterList, Node, LTTaskData);
+               dmConnection.qryMatterDocs.next;
+            end;
+            Next;
+         end;
+         vtsMatterList.EndUpdate;
+         dmConnection.qryMatterDocs.Close;
+      end;
+   finally
+//       dmConnection.orsInsight.Disconnect;
+   end;
+end;
+
+procedure TadxfrmMatters.Refresh1Click(Sender: TObject);
+begin
+   PopulateList;
+end;
+
+procedure TadxfrmMatters.CleanUpEmails;
+var
+   i: integer;
+begin
+   try
+      if FFileList.Count > 0 then
+      begin
+         for i := 0 to (FFileList.Count - 1) do
+            DeleteFile(FFileList.Strings[i]);
+      end;
+   except
+      //
+   end;
+end;
+
+procedure TadxfrmMatters.DoSave(FileName: string; ANMatter: integer; bEmail: boolean = False);
+var
+   AFileName, AModFileName, NewDocName, ANewDocName: string;
+   AFileID, AParsedDocName, NewDocPath, lDocID: string;
+   bMoveSuccess,
+   bCopyMove,
+   attachmentIsInline: boolean;
+   AFileExt,
+   FileExt,
+   EmailSentTo,
+   EmailFrom,
+   DispName,
+   AExt,
+   ADispName,
+   VarDocName,
+   AParsedDir,
+   ParsedVarDocName,
+   ADocDescr,
+   AParentDocID,
+   lSubject: string;
+   FileImg,
+   x,
+   i: integer;
+   EmailCreateDate: TDateTime;
+   ADocumentSaved: boolean;
+begin
+   try
+//      dmSaveDoc.orsInsight.StartTransaction;
+      with qryDocDetails do
+      begin
+         Open;
+         Insert;
+         AFileID := MatterString(ANMatter, 'fileid');
+         lDocID := dmConnection.GetSeqNumber('DOC_DOCID');
+         AFileName := ExtractFileName(FileName);
+         AFileExt := ExtractFileExt(AFileName);
+         ANewDocName := AFileName;
+
+         NewDocPath := SystemString('DRAG_DEFAULT_DIRECTORY');
+
+         if bEmail = False then
+         begin
+            NewDocName := IncludeTrailingPathDelimiter(NewDocPath)  + ANewDocName;
+            AParsedDocName := ParseMacros(NewDocName, ANMatter, StrToInt(lDocID), AFileName);
+         end;
+
+         if (FileName = AParsedDocName) then
+             bMoveSuccess := True
+          else
+             bMoveSuccess := MoveMatterDoc(AParsedDocName, FileName);
+
+         if (bMoveSuccess or
+            (TableInteger('DOC','PATH', AParsedDocName, 'DOCID') = 0)) then
+         begin
+            FileExt := uppercase(Copy(ExtractFileExt(AParsedDocName),2, Length(ExtractFileExt(AParsedDocName))));
+            if (FileExt = 'DOC') or (FileExt = 'DOCX') then
+               FileImg := 2
+            else if (FileExt = 'XLS') or (FileExt = 'XLSX') then
+               FileImg := 3
+            else if (FileExt = 'PDF')  then
+               FileImg := 5
+            else if (FileExt = 'MSG') then
+               FileImg := 4
+            else if (FileExt = 'PPT') or (FileExt = 'PPTX') then
+               FileImg := 6
+            else
+               FileImg := 1;
+
+
+            FieldByName('DOCID').AsInteger := StrToInt(lDocID);
+            FieldByName('DOC_NAME').AsString := ANewDocName;
+            FieldByName('SEARCH').AsString := AFileName;
+            FieldByName('FileID').AsString := AFileID;
+            FieldByName('AUTH1').AsString :=  dmConnection.UserID;
+            FieldByName('DESCR').AsString := AFileName;
+            FieldByName('NMATTER').AsInteger := ANMatter;
+            FieldByName('IMAGEINDEX').AsInteger := FileImg;
+            FieldByName('FILE_EXTENSION').AsString := FileExt;
+//            FieldByName('FOLDER_ID').AsInteger := lFolder;
+            FieldByName('PATH').AsString := IndexPath(AParsedDocName, 'DOC_SHARE_PATH');
+            FieldByName('DISPLAY_PATH').AsString := AParsedDocName;
+            if (FileImg = 4) then
+               FieldByName('d_create').AsDateTime := EmailCreateDate
+            else
+               FieldByName('d_create').AsDateTime := FileDateToDateTime(FileAge(FileName));
+{            if LPrecClass <> -1 then
+               FieldByName('nprecclassification').AsInteger := LPrecClass;  //SystemInteger('DOC_DFLT_CLASSIFICATION');
+            if LPrecCat <> -1 then
+               FieldByName('npreccategory').AsInteger := LPrecCat; //SystemInteger('DOC_DFLT_CATEGORY');
+ }           qryDocDetails.Post;
+         end;
+      end;
+   finally
+//      dmSaveDoc.orsInsight.Commit;
+//      dmAxiom.qryDocDetails.Post;
+//      if bEmail = True then
+//         MAPISession.Logoff;
+   end;
+end;
+
+procedure TadxfrmMatters.DoSaveEmail(AMail: MailItem; ANMatter: integer; var ADocID: integer;
+                                     var ASavedPath: string;  bEmail: boolean = False);
+var
+   AFileName, AModFileName, NewDocName, ANewDocName: string;
+   AFileID, AParsedDocName, NewDocPath, lDocID: string;
+   bMoveSuccess,
+   bCopyMove,
+   attachmentIsInline: boolean;
+   AFileExt,
+   FileExt,
+   EmailSentTo,
+   EmailFrom,
+   DispName,
+   AExt,
+   ADispName,
+   VarDocName,
+   AParsedDir,
+   ParsedVarDocName,
+   ADocDescr,
+   AParentDocID,
+   lSubject,
+   lEmailTo: string;
+   FileImg,
+   x,
+   i,
+   iCount: integer;
+   EmailCreateDate: TDateTime;
+   ADocumentSaved: boolean;
+   lAttachments: OLEVariant;
+   lNewFolder,
+   lParentFolder: MapiFolder;
+   ns : _NameSpace;
+begin
+   try
+//      dmSaveDoc.orsInsight.StartTransaction;
+//      ns := OutlookApp.GetNamespace('MAPI');
+      with qryDocDetails do
+      begin
+         Open;
+         Insert;
+         AFileID := MatterString(ANMatter, 'fileid');
+         lDocID := dmConnection.GetSeqNumber('DOC_DOCID');
+         AParentDocID := lDocID;
+//         AFileName := ExtractFileName(FileName);
+//         AFileExt := ExtractFileExt(AFileName);
+//         ANewDocName := AFileName;
+
+         NewDocPath := SystemString('DRAG_DEFAULT_DIRECTORY');
+
+         if bEmail = True then
+         begin
+            lSubject := AMail.Subject;
+            for x := i + 1 to length(lSubject) do
+            begin
+               if (lSubject[x] in ['/', '\', '?','"','<','>','|','*',':', '.']) then
+                  lSubject[x] := ' ';
+            end;
+            NewDocName := IncludeTrailingPathDelimiter(NewDocPath) + lSubject + '.msg';
+            AParsedDocName := ParseMacros(NewDocName, ANMatter, StrToInt(lDocID), lSubject);
+         end
+         else
+         begin
+            NewDocName := IncludeTrailingPathDelimiter(NewDocPath) + ANewDocName;
+            AParsedDocName := ParseMacros(NewDocName, ANMatter, StrToInt(lDocID), AFileName);
+         end;
+
+         AMail.SaveAs(AParsedDocName, olMsg );
+
+         bMoveSuccess := True;
+
+         if (bMoveSuccess or
+            (TableInteger('DOC','PATH', AParsedDocName, 'DOCID') = 0)) then
+         begin
+            FileExt := uppercase(Copy(ExtractFileExt(AParsedDocName),2, Length(ExtractFileExt(AParsedDocName))));
+            if (FileExt = 'DOC') or (FileExt = 'DOCX') then
+               FileImg := 2
+            else if (FileExt = 'XLS') or (FileExt = 'XLSX') then
+               FileImg := 3
+            else if (FileExt = 'PDF')  then
+               FileImg := 5
+            else if (FileExt = 'MSG') then
+               FileImg := 4
+            else if (FileExt = 'PPT') or (FileExt = 'PPTX') then
+               FileImg := 6
+            else
+               FileImg := 1;
+
+            if (FileImg = 4) then
+            begin
+                try
+                   if AMail <> nil then
+                   begin
+                     EmailCreateDate := AMail.SentOn;
+                     if AMail.Recipients.Count > 0 then
+                     begin
+                        for x := 0 to AMail.Recipients.Count - 1 do
+                           if lEmailTo <> '' then
+                              lEmailTo := lEmailTo +';';
+                           lEmailTo := lEmailTo + AMail.Recipients.Item(x).Name;
+                     end;
+
+                     EmailSentTo := lEmailTo;
+                     if EmailSentTo = '' then
+                        Exit;
+                     EmailFrom := AMail.SenderName;
+                     lParentFolder := ns.GetDefaultFolder(olFolderInbox).Parent as MAPIFolder;
+                     try
+                        lNewFolder := lParentFolder.Folders.Item('Saved In Insight') as MAPIFolder;
+                     except
+                        if (not assigned(lNewFolder)) then
+                           try
+                              lNewFolder := lParentFolder.Folders.Add('Saved In Insight', olFolderInbox);
+                           except
+                              ShowMessage('Error occured during Outlook Folder creation.');
+                                 //  Cannot create the folder.
+                           end;
+                     end;
+
+                     AMail.Move(lNewFolder);
+
+                     if SystemString('EMAIL_SEPARATE_ATTACHMENTS') = 'Y' then
+                     begin
+                        lAttachments := AMail.Attachments;
+//                        lAttachments.Open;
+//                        lAttachments.First;
+//                        iCount := 1;
+                        for iCount := 1 to lAttachments.Count do
+                        begin
+//                           Attachment := lAttachments.OpenAttachment;
+
+                           DispName := lAttachments.Item(iCount).DisplayName;
+
+                           if DispName = '' then
+                              DispName := lAttachments.Item(iCount).FileName;
+
+                           if DispName = '' then
+                              DispName := 'Email Attachment';
+
+                           while Pos('/', DispName) > 0 do
+                              DispName[Pos('/', DispName)] := '.';
+
+                           while Pos('\', DispName) > 0 do
+                              DispName[Pos('\', DispName)] := '.';
+
+                           AExt := ExtractFileExt(DispName);
+                           ADispName := Copy (DispName,1, Length(DispName)- Length(AExt));
+                           ADispName := ADispName + '_' + '[DOCSEQUENCE]';
+                           DispName := ADispName + AExt;
+
+                           VarDocName := IncludeTrailingPathDelimiter(NewDocPath) + DispName;
+
+//                            VarDocName := AParsedDir + DispName;
+                           ParsedVarDocName := ParseMacros(VarDocName, TableInteger('MATTER','FILEID',AFileID,'NMATTER'), StrToInt(lDocID), DispName);
+                           lAttachments.Item(iCount).SaveAsFile(ParsedVarDocName);
+
+                           WriteFileDetailsToDB(StrToInt(AParentDocID), ParsedVarDocName, AFileID, ADocDescr);
+                        end;
+                     end;
+
+
+
+{                     if (SystemString('EMAIL_SEPARATE_ATTACHMENTS') = 'Y') then
+                     begin
+                        try
+                           Attachments := FSavedMsg.Attachments;
+                           if (Attachments <> nil) then
+                           begin
+                              Attachments.Fields.Add(PR_ATTACH_NUM);
+                              Attachments.Fields.Add(PR_ATTACH_LONG_FILENAME);
+                              Attachments.Fields.Add(PR_ATTACH_FILENAME);
+                              Attachments.Fields.Add(PR_ATTACH_METHOD);
+                              Attachments.Open;
+//                              Attachments.First;
+                              if (Attachments.RowCount > 0) then
+                              begin
+                                 while not Attachments.EOF do
+                                 begin
+                                    Attachment := Attachments.OpenAttachment;
+
+                                    DispName := Attachment.PropByName(PR_DISPLAY_NAME).AsString;
+
+                                    if DispName = '' then
+                                       DispName := ExtractFileName(Attachment.PropByName(PR_ATTACH_FILENAME).AsString);
+
+                                    if DispName = '' then
+                                       DispName := ExtractFileName(Attachment.PropByName(PR_ATTACH_LONG_FILENAME).AsString);
+
+                                    attachmentIsInline := false;
+                                    if (pos(DispName, FSavedMsg.HTMLBody) > 0) then
+                                       attachmentIsInline := true;
+
+                                    if (attachmentIsInline = False) then
+                                    begin
+                                       // clean up subject line
+                                       for x := i + 1 to length(DispName) do
+                                       begin
+                                          if (DispName[x] in ['/','\','?','"','<','>','|','*',':',';']) then
+                                             DispName[x] := ' ';
+                                       end;
+
+                                       while Pos('/', DispName) > 0 do
+                                          DispName[Pos('/', DispName)] := '.';
+
+                                       while Pos('\', DispName) > 0 do
+                                          DispName[Pos('\', DispName)] := '.';
+
+                                       AExt := ExtractFileExt(DispName);
+                                       ADispName := Copy (DispName,1, Length(DispName)- Length(AExt));
+                                       ADispName := ADispName + '_' + '[DOCSEQUENCE]';
+                                       if AExt = '' then
+                                          AExt := '.msg';
+                                       DispName := ADispName + AExt;
+
+                                       AParentDocID := ADocID;
+                                       ADocID := dmSaveDoc.GetSeqNumber('DOC_DOCID');
+                                       VarDocName := NewDocPath + '\' + DispName;
+                                       ParsedVarDocName := ParseMacros(VarDocName, TableInteger('MATTER','FILEID',AFileID,'NMATTER'), StrToInt(ADocID), ADocDescr);
+                                       Attachment.SaveToFile(ParsedVarDocName);
+
+                                       WriteFileDetailsToDB(StrToInt(AParentDocID), ParsedVarDocName, AFileID, ADocDescr, StrToInt(ADocID));
+                                    end;
+                                    Attachments.Next;
+                                 end;
+                              end;
+                           end;
+                        finally
+                           Attachments.Close;
+                        end;
+                     end; }
+                     FieldByName('EMAIL_SENT_TO').AsString := EmailSentTo;
+                     FieldByName('EMAIL_FROM').AsString := EmailFrom;
+                   end;
+                finally
+                   AMail := nil;
+                end;
+            end;
+
+            FieldByName('DOCID').AsInteger := StrToInt(lDocID);
+            FieldByName('DOC_NAME').AsString := ANewDocName;
+            FieldByName('SEARCH').AsString := AFileName;
+            FieldByName('FileID').AsString := AFileID;
+            FieldByName('AUTH1').AsString :=  dmConnection.UserID;
+            FieldByName('DESCR').AsString := AFileName;
+            FieldByName('NMATTER').AsInteger := ANMatter;
+            FieldByName('IMAGEINDEX').AsInteger := FileImg;
+            FieldByName('FILE_EXTENSION').AsString := FileExt;
+//            FieldByName('FOLDER_ID').AsInteger := lFolder;
+            FieldByName('PATH').AsString := IndexPath(AParsedDocName, 'DOC_SHARE_PATH');
+            FieldByName('DISPLAY_PATH').AsString := AParsedDocName;
+            if (FileImg = 4) then
+               FieldByName('d_create').AsDateTime := EmailCreateDate
+            else
+               FieldByName('d_create').AsDateTime := FileDateToDateTime(FileAge(AParsedDocName));
+{            if LPrecClass <> -1 then
+               FieldByName('nprecclassification').AsInteger := LPrecClass;  //SystemInteger('DOC_DFLT_CLASSIFICATION');
+            if LPrecCat <> -1 then
+               FieldByName('npreccategory').AsInteger := LPrecCat; //SystemInteger('DOC_DFLT_CATEGORY');
+ }          qryDocDetails.Post;
+            ADocID := StrToInt(lDocID);
+            ASavedPath := AParsedDocName;
+         end;
+      end;
+   finally
+//      dmSaveDoc.orsInsight.Commit;
+//      dmAxiom.qryDocDetails.Post;
+//      if bEmail = True then
+//         MAPISession.Logoff;
+//      ns := nil;
+   end;
+end;
+
+
+function TadxfrmMatters.AddNodeData(AVST: TCustomVirtualStringTree; ANode: PVirtualNode;
+                                    ARecord: TTaskData): PVirtualNode;
+var
+   Data: PTaskData;
+begin
+   Result := AVST.AddChild(ANode);
+   Data := AVST.GetNodeData(Result);
+   AVST.ValidateNode(Result, False);
+   Data^.Text := ARecord.Text;
+   Data^.ImageIndex := Arecord.ImageIndex;
+   Data^.Matter := ARecord.Matter;
+   Data^.DocID := ARecord.DocID;
+   Data^.Path := ARecord.Path;
+end;
+
+procedure TadxfrmMatters.vtsMatterListDblClick(Sender: TObject);
+var
+  LTTaskData: PTaskData;
+  OpenFileErr: integer;
+begin
+   if (vtsMatterList.FocusedNode <> vtsMatterList.RootNode) then
+   begin
+      LTTaskData := vtsMatterList.GetNodeData(vtsMatterList.FocusedNode);
+      if Assigned(LTTaskData) then
+      begin
+         OpenFileErr := ShellExecute(Handle,'open',PChar(LTTaskData.Path),nil,nil,SW_SHOWNORMAL);
+         case OpenFileErr of
+            SE_ERR_NOASSOC :
+               MessageDlg('There is no application associated with the given filename extension.',
+                           mtInformation, [mbOK], 0);
+            SE_ERR_FNF :
+               MessageDlg('File not found.',
+                           mtInformation, [mbOK], 0);
+            SE_ERR_PNF :
+               MessageDlg('Path not found.',
+                           mtInformation, [mbOK], 0);
+         end;
+      end;
+   end;
+end;
+
+function TadxfrmMatters.AddVSTStructure(AVST: TCustomVirtualStringTree; ANode:
+                                        PVirtualNode; ARecord: TTaskData): PVirtualNode;
+var
+   Data: PTaskData;
+begin
+   Result := AVST.AddChild(ANode);
+   Data := AVST.GetNodeData(Result);
+   AVST.ValidateNode(Result, False);
+   Data^.Text := ARecord.Text;
+   Data^.ImageIndex := ARecord.ImageIndex;
+   Data^.Matter := ARecord.Matter;
+   Data^.DocID := ARecord.DocID;
+   Data^.Path := ARecord.Path;
+end;
+
+procedure TadxfrmMatters.vtsMatterListDragDrop(Sender: TBaseVirtualTree;
+  Source: TObject; DataObject: IDataObject; Formats: TFormatArray;
+  Shift: TShiftState; Pt: TPoint; var Effect: Integer; Mode: TDropMode);
+var
+  I, j, a,
+  lNMatter: Integer;
+  MyList: TStringList;
+  AttachMode: TVTNodeAttachMode;
+  sel: Selection;
+  item: IDispatch;
+  LIMail: MailItem;
+  RandFile,
+  lSavedPath,
+  tmpFileName: string;
+  LTTaskData: PTaskData;
+  TaskData: TTaskData;
+  FmtEtc: TFormatEtc;
+  Medium: TStgMedium;
+  ANode: PVirtualNode;
+  lDocID: integer;
+
+  iEnum: IEnumFORMATETC;
+    DidRead:LongInt;
+    F: TFormatEtc;
+    STG:STGMEDIUM;
+    Response:Integer;
+
+    Stream:IStream;
+
+    Storage: IStorage;
+    EnumStg: IEnumStatStg;
+    ST_TAG: STATSTG;
+
+    FileStream: TFileStream;
+    Buff:array[0..1023] of Byte;
+begin
+   if Mode = dmOnNode then
+      AttachMode := amInsertBefore
+   else if Mode = dmAbove then
+      AttachMode := amInsertBefore
+   else if Mode = dmBelow then
+      AttachMode := amInsertAfter
+   else
+      AttachMode := amAddChildLast;
+
+   MyList := TStringList.Create;
+   try
+      for i := 0 to High(formats) - 1 do
+      begin
+         if (Formats[i] = CF_HDROP) or (Formats[i] = CF_UNICODETEXT) then
+         begin
+            FmtEtc.cfFormat := CF_HDROP;
+
+            FmtEtc.ptd := nil;
+            FmtEtc.dwAspect := DVASPECT_CONTENT;
+            FmtEtc.lindex := -1;
+            FmtEtc.tymed := TYMED_HGLOBAL;
+            if Sender.DragManager.DataObject.GetData(FmtEtc, Medium) = S_OK then
+            begin
+               GetFileListFromObj(DataObject, MyList);
+
+                //here we have all filenames
+                LTTaskData := vtsMatterList.GetNodeData(Sender.DropTargetNode);
+                lNMatter := LTTaskData.Matter;
+                for j:=0 to MyList.Count - 1 do
+                begin
+                   DoSave(MyList.Strings[j], lNMatter);
+                   PopulateList;
+                end;
+            end
+            else
+            begin
+               if DataObject.EnumFormatEtc(DATADIR_GET, iEnum) = S_OK then
+               begin
+
+                   {
+                   while (iEnum.Next(1, F, @DidRead) = S_OK) and (DidRead > 0) do
+                   begin
+                     GetClipboardFormatName(F.cfFormat, FormatName, SizeOf(FormatName));
+                     ShowMessage(FormatName + ' : ' + IntToHex(F.cfFormat,4) + '; lindex=' + IntToStr(F.lindex));
+                   end;
+                   }
+
+                   ZeroMemory(@F, SizeOf(F));
+                   F.cfFormat := CF_UNICODETEXT or CF_FILECONTENTS;  //$C105; // CF_FILECONTENTS
+                   F.ptd := nil;
+                   F.dwAspect := DVASPECT_CONTENT;
+                   F.lindex := -1; // Documentation says -1, practice says "0"
+                   F.tymed := TYMED_ISTORAGE;
+
+                   Response := DataObject.GetData(F, STG);
+                   if Response = S_OK then
+                     begin
+                       case STG.tymed of
+                         TYMED_ISTORAGE:
+                           begin
+                             Storage := IStorage(STG.stg);
+                             if Storage.EnumElements(0, nil, 0, EnumStg) = S_OK then
+                             begin
+                               while (EnumStg.Next(1, ST_TAG, @DidRead) = S_OK) and (DidRead > 0) do
+                               begin
+                                 if ST_TAG.cbSize > 0 then
+                                 begin
+                                 Response := Storage.OpenStream(ST_TAG.pwcsName, nil, STGM_READ or STGM_SHARE_EXCLUSIVE, 0, Stream);
+                                 if Response = S_OK then
+                                   begin
+                                     // Dump the stored stream to a file
+                                     FileStream := TFileStream.Create('C:\Temp\' + ST_TAG.pwcsName + '.bin', fmCreate);
+                                     try
+                                       while (Stream.Read(@Buff, SizeOf(Buff), @DidRead) = S_OK) and (DidRead > 0) do
+                                         FileStream.Write(Buff, DidRead);
+                                     finally FileStream.Free;
+                                     end;
+                                   end
+                                 else
+                                   case Response of
+                                     STG_E_ACCESSDENIED: ShowMessage('STG_E_ACCESSDENIED');
+                                     STG_E_FILENOTFOUND: ShowMessage('STG_E_FILENOTFOUND');
+                                     STG_E_INSUFFICIENTMEMORY: ShowMessage('STG_E_INSUFFICIENTMEMORY');
+                                     STG_E_INVALIDFLAG: ShowMessage('STG_E_INVALIDFLAG');
+                                     STG_E_INVALIDNAME: ShowMessage('STG_E_INVALIDNAME');
+                                     STG_E_INVALIDPOINTER: ShowMessage('STG_E_INVALIDPOINTER');
+                                     STG_E_INVALIDPARAMETER: ShowMessage('STG_E_INVALIDPARAMETER');
+                                     STG_E_REVERTED: ShowMessage('STG_E_REVERTED');
+                                     STG_E_TOOMANYOPENFILES: ShowMessage('STG_E_TOOMANYOPENFILES');
+                                     else
+                                       ShowMessage('Err: #' + IntToHex(Response, 4));
+                                   end;
+                                 end;
+                               end;
+                             end;
+                           end
+                         else
+                           ShowMessage('TYMED?');
+                       end;
+                     end
+                   else
+                     case Response of
+                       DV_E_LINDEX: ShowMessage('DV_E_LINDEX');
+                       DV_E_FORMATETC: ShowMessage('DV_E_FORMATETC');
+                       DV_E_TYMED: ShowMessage('DV_E_TYMED');
+                       DV_E_DVASPECT: ShowMessage('DV_E_DVASPECT');
+                       OLE_E_NOTRUNNING: ShowMessage('OLE_E_NOTRUNNING');
+                       STG_E_MEDIUMFULL: ShowMessage('STG_E_MEDIUMFULL');
+                       E_UNEXPECTED: ShowMessage('E_UNEXPECTED');
+                       E_INVALIDARG: ShowMessage('E_INVALIDARG');
+                       E_OUTOFMEMORY: ShowMessage('E_OUTOFMEMORY');
+                       else
+                        ShowMessage('Err = ' + IntToStr(Response));
+                     end;
+                   end;
+               end;
+            end;
+{
+              if (sel <> nil) then
+              begin
+                 FFileList := TStringList.Create;
+                 for a := 1 to OutlookAppObj.ActiveExplorer.Selection.Count do
+                 begin
+                    item := sel.Item(a);
+                    item.QueryInterface(IID__MailItem, LIMail);
+                    if LIMail <> nil then
+                    begin
+                       Randomize;
+                       RandFile := IntToStr(RandomRange(100, 10000));
+                       tmpFileName := tmpdir + 'insighteml' + RandFile + '.msg';
+                       LIMail.SaveAs(tmpFileName, olMsg );
+                       FFileList.Add(tmpFileName);
+                    end
+                    else
+                       Exit;
+                 end;
+                 LTTaskData := vtsMatterList.GetNodeData(Sender.DropTargetNode);
+                 lNMatter := LTTaskData.Matter;
+                 for j := 0 to FFileList.Count - 1 do
+                 begin
+                    DoSaveEmail(LIMail, lNMatter, lDocID, lSavedPath, True);
+                    ANode := Sender.DropTargetNode; //Sender.getn (Sender.DropTargetNode, AttachMode);
+                    TaskData.Text := LIMail.Subject;
+                    TaskData.ImageIndex := 4;
+                    TaskData.Matter := lnMatter;
+                    TaskData.DocID := lDocID;
+                    TaskData.Path := lSavedPath;
+                    AddVSTStructure(vtsMatterList, ANode,TaskData);
+//                    Result := AVST.AddChild(ANode);
+//                    Data := AVST.GetNodeData(Result);
+//                    AVST.ValidateNode(Result, False);
+
+//                    Data := vtsMatterList.GetNodeData(ANode);
+//                    vtsMatterList.ValidateNode(ANode, False);
+//                    LTTaskData^.Text := FFileList.Text;
+//                    LTTaskData^.ImageIndex := 4;
+//                    LTTaskData^.Matter := lnMatter;
+//                    LTTaskData^.DocID := lDocID;
+//                    LTTaskData^.Path := lSavedPath;
+                 end;
+                 CleanUpEmails();
+                 FFileList.Free;
+                 FFileList := nil;
+              end
+            end;
+//            PopulateList;
+         end;               }
+      end;
+   finally
+      MyList.Free;
+   end;
+end;
+
+{procedure TadxfrmMatters.GetFileListFromObj(const DataObj: IDataObject; FileList: TStringList);
+var
+   FmtEtc: TFormatEtc;                   // specifies required data format
+   Medium: TStgMedium;                   // storage medium containing file list
+   DroppedFileCount: Integer;            // number of dropped files
+   I: Integer;                           // loops thru dropped files
+   FileNameLength: Integer;              // length of a dropped file name
+   FileName: string;                     // name of a dropped file
+begin
+   // Get required storage medium from data object
+   FmtEtc.cfFormat := CF_HDROP;//  CF_TEXT;
+   FmtEtc.ptd := nil;
+   FmtEtc.dwAspect := DVASPECT_CONTENT;
+   FmtEtc.lindex := -1;
+   FmtEtc.tymed := TYMED_HGLOBAL;
+   OleCheck(DataObj.GetData(FmtEtc, Medium));
+   try
+      try
+         // Get count of files dropped
+         DroppedFileCount := DragQueryFile(Medium.hGlobal, $FFFFFFFF, nil, 0);
+         // Get name of each file dropped and process it
+         for I := 0 to Pred(DroppedFileCount) do
+         begin
+            // get length of file name, then name itself
+            FileNameLength := DragQueryFile(Medium.hGlobal, I, nil, 0);
+            SetLength(FileName, FileNameLength);
+            DragQueryFileW(Medium.hGlobal, I, PWideChar(FileName), FileNameLength + 1);
+            // add file name to list
+            FileList.Append(FileName);
+         end;
+      finally
+         // Tidy up - release the drop handle
+         // don't use DropH again after this
+         DragFinish(Medium.hGlobal);
+      end;
+   finally
+      ReleaseStgMedium(Medium);
+   end;
+end;  }
+
+procedure TadxfrmMatters.vtsMatterListDragOver(Sender: TBaseVirtualTree;
+  Source: TObject; Shift: TShiftState; State: TDragState; Pt: TPoint;
+  Mode: TDropMode; var Effect: Integer; var Accept: Boolean);
+begin
+
+{  var
+   FmtEtc: TFormatEtc;
+   Medium: TStgMedium;
+begin
+   FmtEtc.cfFormat := CF_HDROP;
+   FmtEtc.ptd := nil;
+   FmtEtc.dwAspect := DVASPECT_CONTENT;
+   FmtEtc.lindex := -1;
+   FmtEtc.tymed := TYMED_HGLOBAL;
+
+//   if Sender.DragManager.DataObject.GetData(FmtEtc, Medium) = S_OK then}
+   Accept := (not vtsMatterList.IsEmpty);
+end;
+
+procedure TadxfrmMatters.vtsMatterListGetImageIndex(
+  Sender: TBaseVirtualTree; Node: PVirtualNode; Kind: TVTImageKind;
+  Column: TColumnIndex; var Ghosted: Boolean; var ImageIndex: Integer);
+var
+  NodeData: PTaskData;
+begin
+   NodeData := Sender.GetNodeData(Node);
+//   if (Sender.RootNode = Node.Parent) then
+      ImageIndex := NodeData^.ImageIndex;
+//   else
+//      ImageIndex := NodeData^.DocImageIndex;
+end;
+
+procedure TadxfrmMatters.vtsMatterListGetText(Sender: TBaseVirtualTree;
+  Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType;
+  var CellText: string);
+var
+   NodeData: PTaskData;
+begin
+   NodeData := Sender.GetNodeData(Node);
+//   if (Sender.RootNode = Node.Parent) then
+      CellText := NodeData^.Text;
+//   else
+//      CellText := NodeData^.DocText;
+end;
+
+procedure TadxfrmMatters.InsertData(Sender: TVirtualStringTree; DataObject: IDataObject; Formats: TFormatArray;
+  Effect: Integer; Mode: TVTNodeAttachMode; AStrList: TStringList);
+var
+  FormatAccepted: Boolean;
+  I: Integer;
+  Stream: TStream;
+  Name, TempFile, FileID,
+  tmpdir: string;
+begin
+  // Go through each available format and see if we can make sense of it.
+  FormatAccepted := False;
+  if AStrList.Count > 0 then
+      FFileList := TStringList.Create;
+   try
+      for i := 0 to AStrList.Count-1 do
+      begin
+          Name := AStrList.Names[i];
+          if (Name = '') then
+              Name := intToStr(i)+'.dat';
+          Stream := TFileStream.Create(tmpdir + Name, fmCreate);
+
+          try
+              // Copy dropped data to stream (in this case a file stream).
+//            Stream.CopyFrom(DropComboTarget1.Data[i], DropComboTarget1.Data[i].Size);
+          finally
+             Stream.Free;
+          end;
+          TempFile := tmpdir + Name;
+          FFileList.Add(TempFile);
+      end;
+   finally
+//      DoSave();
+//      CleanUpEmails();
+      FFileList.Free;
+      FFileList := nil;
+   end;
+
+
+  for I := 0 to High(Formats) do
+  begin
+    case Formats[I] of
+      // standard clipboard formats
+      CF_UNICODETEXT:
+        begin
+//          LogListBox.Items.Add('  - Unicode text');
+
+          // As demonstration for non-tree data here an implementation for Unicode text.
+          // Formats are placed in preferred order in the formats parameter. Hence if
+          // there is native tree data involved in this drop operation then it has been
+          // caught earlier in the loop and FormatAccepted is already True.
+          if not FormatAccepted then
+          begin
+            // Unicode text data was dropped (e.g. from RichEdit1) add this line by line
+            // as new nodes.
+//            AddUnicodeText(DataObject, Sender as TVirtualStringTree, Mode);
+//            LogListBox.Items.Add('+ Unicode accepted');
+            FormatAccepted := True;
+          end;
+        end;
+    else
+      if Formats[I] = CF_VIRTUALTREE then
+      begin
+        // this is our native tree format
+//        LogListBox.Items.Add('  - native Virtual Treeview data');
+
+        if not FormatAccepted then
+        begin
+          Sender.ProcessDrop(DataObject, Sender.DropTargetNode, Effect, Mode);
+//          LogListBox.Items.Add('+ native Virtual Treeview data accepted');
+          // Indicate that we found a format we accepted so the data is not used twice.
+          FormatAccepted := True;
+        end;
+      end
+      else
+        if Formats[I] = CF_VTREFERENCE then
+//          LogListBox.Items.Add('  - Virtual Treeview reference')
+        else
+        begin
+          // Predefined, shell specific, MIME specific or application specific clipboard data.
+//          LogListBox.Items.Add(FindCPFormatDescription(Formats[I]));
+        end;
+    end;
+  end;
+end;
+
+
+procedure TadxfrmMatters.lblMoreClick(Sender: TObject);
+begin
+   try
+      frmMtrSearch :=TfrmMtrSearch.Create(nil);
+      if (frmMtrSearch.ShowModal = mrOK) then
+      begin
+
+      end;
+   finally
+      frmMtrSearch.Free;
+   end;
+end;
+
+procedure TadxfrmMatters.lblMoreMouseEnter(Sender: TObject);
+begin
+   lblMore.Font.Style := [fsBold];
+end;
+
+procedure TadxfrmMatters.lblMoreMouseLeave(Sender: TObject);
+begin
+   lblMore.Font.Style := [];
+end;
+
+procedure TadxfrmMatters.GetFileListFromObj(const DataObj: IDataObject; const FileList: TStrings);
+var
+  FmtEtc: TFormatEtc;         // specifies required data format
+  Medium: TStgMedium;         // storage medium containing file list
+  DroppedFileCount: Integer;  // number of dropped files
+  I: Integer;                 // loops thru dropped files
+  FileNameLength: Integer;    // length of a dropped file name
+  FileName: string;           // name of a dropped file
+begin
+  // Get required storage medium from data object
+  FmtEtc.cfFormat := CF_HDROP;
+  FmtEtc.ptd := nil;
+  FmtEtc.dwAspect := DVASPECT_CONTENT;
+  FmtEtc.lindex := -1;
+  FmtEtc.tymed := TYMED_HGLOBAL;
+  OleCheck(DataObj.GetData(FmtEtc, Medium));
+  try
+    try
+      // Get count of files dropped
+      DroppedFileCount := DragQueryFile(Medium.hGlobal, $FFFFFFFF, nil, 0);
+      // Get name of each file dropped and process it
+      for I := 0 to Pred(DroppedFileCount) do
+      begin
+        // get length of file name, then name itself
+        FileNameLength := DragQueryFile(Medium.hGlobal, I, nil, 0);
+        SetLength(FileName, FileNameLength);
+        DragQueryFile(
+          Medium.hGlobal, I, PChar(FileName), FileNameLength + 1
+        );
+        // add file name to list
+        FileList.Add(FileName);
+      end;
+    finally
+      // Tidy up - release the drop handle
+      // don't use DropH again after this
+      DragFinish(Medium.hGlobal);
+    end;
+  finally
+    ReleaseStgMedium(Medium);
+  end;
+end;
+
+initialization
+  RegisterClass(TPersistentClass(TadxfrmMatters));
+//  CF_FILECONTENTS:=RegisterClipboardFormat(CFSTR_FILECONTENTS);
+
+finalization
+end.
+
+
+
+
+

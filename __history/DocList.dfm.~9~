@@ -1,0 +1,175 @@
+object frmDocList: TfrmDocList
+  Left = 0
+  Top = 0
+  Caption = 'Document List'
+  ClientHeight = 593
+  ClientWidth = 742
+  Color = clBtnFace
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -13
+  Font.Name = 'Segoe UI'
+  Font.Style = []
+  OldCreateOrder = True
+  Position = poScreenCenter
+  OnClose = FormClose
+  OnCreate = FormCreate
+  OnShow = FormShow
+  PixelsPerInch = 106
+  TextHeight = 17
+  object Panel1: TPanel
+    Left = 0
+    Top = 555
+    Width = 742
+    Height = 38
+    Align = alBottom
+    TabOrder = 0
+    ExplicitTop = 503
+    ExplicitWidth = 685
+    DesignSize = (
+      742
+      38)
+    object BitBtn1: TBitBtn
+      Left = 533
+      Top = 7
+      Width = 85
+      Height = 26
+      Anchors = [akRight, akBottom]
+      Caption = 'Select'
+      ModalResult = 1
+      TabOrder = 0
+      ExplicitLeft = 476
+    end
+    object BitBtn2: TBitBtn
+      Left = 641
+      Top = 7
+      Width = 85
+      Height = 26
+      Anchors = [akRight, akBottom]
+      Caption = 'Cancel'
+      ModalResult = 2
+      TabOrder = 1
+      ExplicitLeft = 584
+    end
+    object btnSearch: TBitBtn
+      Left = 197
+      Top = 6
+      Width = 85
+      Height = 28
+      Caption = 'Search'
+      TabOrder = 2
+      OnClick = btnSearchClick
+    end
+    object edtMatter: TcxTextEdit
+      Left = 64
+      Top = 7
+      TabOrder = 3
+      Width = 134
+    end
+  end
+  object gridDocList: TcxGrid
+    Left = 0
+    Top = 0
+    Width = 742
+    Height = 555
+    Align = alClient
+    TabOrder = 1
+    ExplicitWidth = 685
+    ExplicitHeight = 503
+    object tvDocList: TcxGridDBTableView
+      Navigator.Buttons.CustomButtons = <>
+      DataController.DataModeController.GridMode = True
+      DataController.DataSource = dmSaveDoc.dsDocs
+      DataController.Summary.DefaultGroupSummaryItems = <>
+      DataController.Summary.FooterSummaryItems = <>
+      DataController.Summary.SummaryGroups = <>
+      FilterRow.SeparatorWidth = 7
+      FixedDataRows.SeparatorWidth = 7
+      NewItemRow.SeparatorWidth = 7
+      OptionsData.Deleting = False
+      OptionsData.Editing = False
+      OptionsData.Inserting = False
+      OptionsSelection.MultiSelect = True
+      OptionsView.CellEndEllipsis = True
+      OptionsView.NavigatorOffset = 55
+      OptionsView.CellAutoHeight = True
+      OptionsView.ColumnAutoWidth = True
+      OptionsView.GroupByBox = False
+      OptionsView.Indicator = True
+      OptionsView.IndicatorWidth = 13
+      Preview.LeftIndent = 22
+      Preview.RightIndent = 6
+      object tvDocListFILEID: TcxGridDBColumn
+        Caption = 'Matter'
+        DataBinding.FieldName = 'FILEID'
+        Options.Editing = False
+        Options.Filtering = False
+        Options.Grouping = False
+        Options.Moving = False
+        Width = 60
+      end
+      object tvDocListD_CREATE: TcxGridDBColumn
+        Caption = 'Created'
+        DataBinding.FieldName = 'D_CREATE'
+        Options.Editing = False
+        Options.Filtering = False
+        Options.Grouping = False
+        Options.Moving = False
+        Width = 65
+      end
+      object tvDocListDOC_NAME: TcxGridDBColumn
+        Caption = 'Document Name'
+        DataBinding.FieldName = 'DOC_NAME'
+        Options.Editing = False
+        Options.Filtering = False
+        Options.Grouping = False
+        Options.Moving = False
+        Width = 100
+      end
+      object tvDocListDESCR: TcxGridDBColumn
+        Caption = 'Description'
+        DataBinding.FieldName = 'DESCR'
+        Options.Editing = False
+        Options.Filtering = False
+        Options.Grouping = False
+        Options.Moving = False
+        Width = 120
+      end
+      object tvDocListEMAIL_SENT_TO: TcxGridDBColumn
+        Caption = 'Email Sent To'
+        DataBinding.FieldName = 'EMAIL_SENT_TO'
+        Options.Editing = False
+        Options.Filtering = False
+        Options.Grouping = False
+        Options.Moving = False
+        Width = 120
+      end
+      object tvDocListEMAIL_FROM: TcxGridDBColumn
+        Caption = 'Email From'
+        DataBinding.FieldName = 'EMAIL_FROM'
+        Options.Editing = False
+        Options.Filtering = False
+        Options.Grouping = False
+        Options.Moving = False
+        Width = 120
+      end
+      object tvDocListNMATTER: TcxGridDBColumn
+        DataBinding.FieldName = 'NMATTER'
+        Visible = False
+        Options.Editing = False
+        Options.Focusing = False
+        VisibleForCustomization = False
+      end
+      object tvDocListDOCID: TcxGridDBColumn
+        DataBinding.FieldName = 'DOCID'
+        Visible = False
+        Options.Editing = False
+        Options.Focusing = False
+        VisibleForCustomization = False
+      end
+    end
+    object lvDocList: TcxGridLevel
+      GridView = tvDocList
+    end
+  end
+end

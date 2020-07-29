@@ -1,0 +1,527 @@
+object frmSaveDocDetails: TfrmSaveDocDetails
+  Left = 529
+  Top = 265
+  AlphaBlendValue = 245
+  BorderStyle = bsDialog
+  Caption = 'SpeediDocs Save'
+  ClientHeight = 570
+  ClientWidth = 409
+  Color = clBtnFace
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -13
+  Font.Name = 'Segoe UI'
+  Font.Style = []
+  Icon.Data = {
+    0000010002002020100000000000E80200002600000010101000000000002801
+    00000E0300002800000020000000400000000100040000000000800200000000
+    0000000000000000000000000000000000000000800000800000008080008000
+    0000800080008080000080808000C0C0C0000000FF0000FF000000FFFF00FF00
+    0000FF00FF00FFFF0000FFFFFF00000000000000000000000000000000000000
+    0000000000000000000000000000000000000000000000000000000000000000
+    0000000000000000000000000000000000000000000000000000000000000000
+    0000000000000000000000000000000000000000000000000000000000000000
+    0000000000000000000000000000000000000000000000000000000000000000
+    0000000000000000000000000000000000000000000000888888880000000000
+    088888888888888888888880000088888888888888888888887CC88000008888
+    88888888887CCCCCCCCCC87800008888887CCCCCCCCCCCC8FFFFFF7780000CCC
+    CCCCCCC8FFFFFFFF8CCC7FF878000CC7FFFFFFFFF8CCCCCCCCCC77FFF7800000
+    F8CCCCCCCCCCCC8FFFFFF77FFF770000CCCCCC8FFFFFFFF7CCC8FF77FFF70000
+    000FFFF8CCCCCCCCCCC77FF870000000000CCCCCCCCC8FFFFFFF770000000000
+    000C7FFFFFFFFF7CCC7FF700000000000000008CCCCCCCCCCC77000000000000
+    000000CCCCC8FFFFFFF700000000000000000000000000000000000000000000
+    0000000000000000000000000000000000000000000000000000000000000000
+    0000000000000000000000000000000000000000000000000000000000000000
+    0000000000000000000000000000000000000000000000000000000000000000
+    0000000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+    FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFC03FF800001F0000
+    001F0000000F000000078000000380000001F0000000F0000000FE000007FE00
+    003FFE00003FFFC000FFFFC000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+    FFFFFFFFFFFFFFFFFFFFFFFFFFFF280000001000000020000000010004000000
+    0000C00000000000000000000000000000000000000000000000000080000080
+    00000080800080000000800080008080000080808000C0C0C0000000FF0000FF
+    000000FFFF00FF000000FF00FF00FFFF0000FFFFFF0000000000000000000008
+    888888800000888888888888000088888887CC880000CCCCCCCCCC878000CCCC
+    8FFFFFF77800FFFFF8CCC7FF8780CCCCCCCCC77FFF78CCC8FFFFFF77FFF7FFFF
+    7CCC8FF77FFFCCCCCCCC77FF8700C8FFFFFFF7700000FFF7CCC7FF700000CCCC
+    CCC7700000008FFFFFFF700000000000000000000000FFFF0000E01F0000000F
+    0000000F00000007000000030000000100000000000000000000000000000003
+    0000001F0000001F0000007F0000007F0000FFFF0000}
+  KeyPreview = True
+  OldCreateOrder = True
+  Position = poOwnerFormCenter
+  OnClose = FormClose
+  OnCloseQuery = FormCloseQuery
+  OnShow = FormShow
+  DesignSize = (
+    409
+    570)
+  PixelsPerInch = 106
+  TextHeight = 17
+  object lblMatter: TLabel
+    Left = 51
+    Top = 10
+    Width = 65
+    Height = 15
+    Alignment = taRightJustify
+    AutoSize = False
+    Caption = 'Matter'
+  end
+  object lblDescription: TLabel
+    Left = 33
+    Top = 71
+    Width = 83
+    Height = 15
+    Alignment = taRightJustify
+    AutoSize = False
+    Caption = 'Doc Name'
+  end
+  object Label1: TLabel
+    Left = 37
+    Top = 99
+    Width = 79
+    Height = 17
+    Alignment = taRightJustify
+    AutoSize = False
+    Caption = 'Category'
+  end
+  object Label2: TLabel
+    Left = 16
+    Top = 126
+    Width = 100
+    Height = 15
+    Alignment = taRightJustify
+    AutoSize = False
+    Caption = 'Classification'
+  end
+  object Label3: TLabel
+    Left = 35
+    Top = 153
+    Width = 81
+    Height = 15
+    Alignment = taRightJustify
+    AutoSize = False
+    Caption = 'Keywords'
+  end
+  object Label4: TLabel
+    Left = 2
+    Top = 175
+    Width = 114
+    Height = 14
+    Alignment = taRightJustify
+    AutoSize = False
+    Caption = 'Document Details'
+  end
+  object Label5: TLabel
+    Left = 12
+    Top = 326
+    Width = 88
+    Height = 17
+    Caption = 'Document Path'
+  end
+  object Label6: TLabel
+    Left = 74
+    Top = 233
+    Width = 39
+    Height = 17
+    Caption = 'Author'
+  end
+  object Label7: TLabel
+    Left = 119
+    Top = 36
+    Width = 272
+    Height = 29
+    AutoSize = False
+    WordWrap = True
+  end
+  object grpTimeEntry: TGroupBox
+    Left = 8
+    Top = 381
+    Width = 388
+    Height = 130
+    Enabled = False
+    TabOrder = 16
+    object Label8: TLabel
+      Left = 5
+      Top = 46
+      Width = 56
+      Height = 17
+      Caption = 'Narration'
+    end
+    object Label9: TLabel
+      Left = 5
+      Top = 100
+      Width = 29
+      Height = 17
+      Caption = 'Units'
+    end
+    object Label10: TLabel
+      Left = 5
+      Top = 19
+      Width = 25
+      Height = 17
+      Caption = 'Task'
+    end
+    object neUnits: TcxSpinEdit
+      Left = 105
+      Top = 96
+      TabOrder = 2
+      Value = 1
+      Width = 56
+    end
+    object memoTimeNarration: TcxMemo
+      Left = 105
+      Top = 46
+      Properties.ScrollBars = ssVertical
+      TabOrder = 1
+      Height = 46
+      Width = 277
+    end
+    object cmbTasks: TcxLookupComboBox
+      Left = 105
+      Top = 16
+      Properties.KeyFieldNames = 'CODE'
+      Properties.ListColumns = <
+        item
+          FieldName = 'DESCR'
+        end>
+      Properties.ListSource = dsScaleCost
+      TabOrder = 0
+      Width = 277
+    end
+  end
+  object btnSave: TBitBtn
+    Left = 78
+    Top = 515
+    Width = 116
+    Height = 28
+    Anchors = [akLeft, akBottom]
+    Caption = '&Save'
+    Glyph.Data = {
+      36040000424D3604000000000000360000002800000010000000100000000100
+      2000000000000004000000000000000000000000000000000000FF00FF00FF00
+      FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00
+      FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00
+      FF00AB4F4F00964F4C00AB4F4F00C6C4C600C6C4C600C6C4C600C6C4C600C6C4
+      C600C4C4C400AB4F4F00AB4F4F00AB4F4F00FF00FF00FF00FF00FF00FF00B584
+      7400AB4F4F00CD676400964F4C00C3A2A900C49C9400DCDADB00FFFCFF00E9EA
+      E900DCDADB0096363500AB4F4F00CD676400964F4C00FF00FF00FF00FF00B584
+      7400CD676400CD676400964F4C00C3B5B400AB4F4F00C2907D00C4C4C400FFFC
+      FF00E9EAE90096363500AB4F4F00CD676400964F4C00FF00FF00FF00FF00B584
+      7400CD676400CD6764009B4F5400DBCBC70096363500AB4F4F00AE837A00C6C4
+      C600FFFCFF0096363500BC6B6D00CD676400964F4C00FF00FF00FF00FF00B584
+      7400CD676400CD6764009B4F5400DBCBC700DBCBC700DBCBC700C3B5B400C6C4
+      C600DCDADB0096363500AB4F4F00CD676400964F4C00FF00FF00FF00FF00B584
+      7400CD676400CD676400BC6B6D00C2907D00C2907D00C2907D00C2907D00BC6B
+      6D00FF618300AB4F4F00CD676400CD676400964F4C00FF00FF00FF00FF00B584
+      7400CD676400CD676400CD676400CD676400CD676400CD676400CD676400CD67
+      6400CD676400CD676400CD676400CD676400964F4C00FF00FF00FF00FF00B584
+      7400CE676D00FF618300FFA5AC00FFA5AC00FFA5AC00FFA5AC00FFA5AC00FFA5
+      AC00FFA5AC00FF618300AB4F4F00CE676D00964F4C00FF00FF00FF00FF00B584
+      7400CD676400964F4C00F6F3F600F6F3F600FFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00FFFFFF00FFA5AC00CD676400CE676D00964F4C00FF00FF00FF00FF00B584
+      7400CE676D00AB4F4F00F6F3F600C6C4C600C6C4C600C6C4C600C6C4C600C6C4
+      C600F6F3F600FFA5AC00AB4F4F00CE676D00964F4C00FF00FF00FF00FF00B584
+      7400CE676D00AB4F4F00F6F3F600F6F3F600F6F3F600F6F3F600FFFFFF00FFFF
+      FF00FFFFFF00FFA5AC00AB4F4F00CE676D00964F4C00FF00FF00FF00FF00B584
+      7400CE676D00964F4C00F6F3F600C6C4C600C6C4C600C6C4C600C6C4C600C6C4
+      C600F6F3F600FFA5AC00BC6B6D00CE676D00964F4C00FF00FF00FF00FF00B584
+      7400CE676D00AB4F4F00F6F3F600F6F3F600F6F3F600F6F3F600F6F3F600F6F3
+      F600FFFFFF00FFA5AC00AB4F4F00CE676D00964F4C00FF00FF00FF00FF00B584
+      7400964F4C0096363500C6C4C600C6C4C600C6C4C600C6C4C600C6C4C600C6C4
+      C600C6C4C600FF61830096363500964F4C00FF00FF00FF00FF00FF00FF00FF00
+      FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00
+      FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00}
+    TabOrder = 12
+    OnClick = btnSaveClick
+  end
+  object btnClose: TBitBtn
+    Left = 236
+    Top = 515
+    Width = 115
+    Height = 28
+    Anchors = [akLeft, akBottom]
+    Caption = '&Cancel'
+    Glyph.Data = {
+      36040000424D3604000000000000360000002800000010000000100000000100
+      2000000000000004000000000000000000000000000000000000FFFFFF00FFFF
+      FF00F3F3F30CE7E7E718F2F2F20DFFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00FFFFFF00FFFFFF00FFFFFF00F5F5F50AE9E9E916FFFFFF00FFFFFF00F3F3
+      F30CB0B0B04F6E6E6E919B9B9B64EFEFEF10FFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00FFFFFF00FEFEFE01E4E4E41BA7A7A7589090906FE9E9E916FFFFFF00907C
+      EB832900DFFF3E28A5D76565659AC9C9C936FCFCFC03FFFFFF00FFFFFF00FFFF
+      FF00FCFCFC03D5D5D52A6150B2AF2D07D8F8A7A7A758F5F5F50AFFFFFF00BBAF
+      F4502900DFFF300ADBF5524E69B17F7F7F80DDDDDD22FFFFFF00FFFFFF00FCFC
+      FC03C7C5D23A4529C2D62900DFFF7C6BCD94F0F0F00FFFFFFF00FFFFFF00FFFF
+      FF008670ED8F2900DFFF3C1CD1E35F5F5FA09494946BE1E1E11EFCFCFC03C7C5
+      D23A3918CDE72D07D8F8A39CC563F6F6F609FFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00FFFFFF007960EB9F2900DFFF5138C2C76464649B9292926DB6B4C14B3918
+      CDE72D07D8F8A39CC563F6F6F609FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00FFFFFF00FFFFFF007960EB9F2900DFFF5037C2C852505DAF3312C7ED2C06
+      D6F9A39CC563F6F6F609FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00FFFFFF00FFFFFF00FFFFFF00785FE9A02900DFFF2C06D6F92B05D5FA6A62
+      8B9DDADADA25FEFEFE01FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00FFFFFF00FFFFFF00FCFCFC03C7C5D23A2E08D9F72900DFFF472BC3D47474
+      748B9191916ED5D5D52AF9F9F906FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00FFFFFF00FCFCFC03C7C5D23A3918CDE72D07D8F8705CCBA3350FDFF0593D
+      D5C27C7A88858585857AC3C3C33CF3F3F30CFFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00F9F9F906C7C5D23A3918CDE72900DFFF8A80B87FF0F0F00FD6CFF830431F
+      E2E04928DDD779729C8D7C7C7C83B3B3B34CF5F5F50AFFFFFF00FFFFFF00FBFB
+      FB04BBB9C7463817CCE82900DFFF7263B69CEAEAEA15FFFFFF00FFFFFF00F1EF
+      FC105E40E7BF340EDEF17B6EB39189898976DBDBDB24FCFCFC03FFFFFF00C5BE
+      E7413817CCE82900DFFF5A46B5B9E3E3E31CFFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00FFFFFF00937FEE802900DFFFCFCAE635FCFCFC03FFFFFF00FFFFFF00411D
+      DFE22900DFFF4529C2D6D5D5D52AFEFEFE01FFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF003610
+      E1EF4D2CE1D3DFDDEB22FEFEFE01FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFF
+      FF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00FFFFFF00}
+    TabOrder = 13
+    OnClick = btnCloseClick
+  end
+  object rgStorage: TRadioGroup
+    Left = 12
+    Top = 255
+    Width = 161
+    Height = 67
+    Hint = 'If Storage Type is Path, Document name should include the path.'
+    Caption = 'Storage Type'
+    ItemIndex = 1
+    Items.Strings = (
+      'Store File in Database'
+      'Store Only the Path')
+    TabOrder = 7
+  end
+  object cbPortalAccess: TCheckBox
+    Left = 178
+    Top = 305
+    Width = 177
+    Height = 19
+    Caption = 'Client Portal Access'
+    TabOrder = 10
+  end
+  object cbOverwriteDoc: TCheckBox
+    Left = 178
+    Top = 283
+    Width = 198
+    Height = 20
+    Caption = 'Overwrite Current Document'
+    TabOrder = 9
+  end
+  object cbLeaveDocOpen: TCheckBox
+    Left = 178
+    Top = 262
+    Width = 216
+    Height = 19
+    Caption = 'Leave Document open after save'
+    Checked = True
+    State = cbChecked
+    TabOrder = 8
+  end
+  object cbNewCopy: TCheckBox
+    Left = 260
+    Top = 11
+    Width = 128
+    Height = 18
+    Caption = 'Create new copy'
+    Checked = True
+    State = cbChecked
+    TabOrder = 0
+    Visible = False
+  end
+  object StatusBar: TStatusBar
+    Left = 0
+    Top = 549
+    Width = 409
+    Height = 21
+    Panels = <
+      item
+        Width = 340
+      end>
+    ParentFont = True
+    UseSystemFont = False
+  end
+  object cmbPrecCategory: TcxLookupComboBox
+    Left = 119
+    Top = 95
+    Properties.ClearKey = 46
+    Properties.KeyFieldNames = 'NPRECCATEGORY'
+    Properties.ListColumns = <
+      item
+        FieldName = 'DESCR'
+      end>
+    Properties.ListOptions.GridLines = glNone
+    Properties.ListOptions.ShowHeader = False
+    Properties.ListSource = dsPrecCategory
+    EditValue = 0
+    TabOrder = 2
+    Width = 274
+  end
+  object cmbClassification: TcxLookupComboBox
+    Left = 119
+    Top = 122
+    Properties.ClearKey = 46
+    Properties.KeyFieldNames = 'NPRECCLASSIFICATION'
+    Properties.ListColumns = <
+      item
+        FieldName = 'DESCR'
+      end>
+    Properties.ListOptions.GridLines = glNone
+    Properties.ListOptions.ShowHeader = False
+    Properties.ListSource = dsPrecClassification
+    TabOrder = 3
+    Width = 274
+  end
+  object cmbAuthor: TcxLookupComboBox
+    Left = 119
+    Top = 230
+    Properties.ClearKey = 46
+    Properties.KeyFieldNames = 'CODE'
+    Properties.ListColumns = <
+      item
+        FieldName = 'NAME'
+      end>
+    Properties.ListOptions.GridLines = glNone
+    Properties.ListOptions.ShowHeader = False
+    Properties.ListSource = dsEmployee
+    TabOrder = 6
+    Width = 274
+  end
+  object chkCreateTime: TCheckBox
+    Left = 12
+    Top = 375
+    Width = 164
+    Height = 19
+    Caption = 'Create Time Sheet Entry'
+    TabOrder = 14
+    OnClick = chkCreateTimeClick
+  end
+  object txtDocName: TcxTextEdit
+    Left = 119
+    Top = 68
+    TabOrder = 1
+    Width = 274
+  end
+  object edKeywords: TcxTextEdit
+    Left = 119
+    Top = 150
+    TabOrder = 4
+    Width = 274
+  end
+  object memoPrecDetails: TcxMemo
+    Left = 119
+    Top = 177
+    Properties.ClearKey = 46
+    Properties.ScrollBars = ssVertical
+    TabOrder = 5
+    Height = 52
+    Width = 274
+  end
+  object btnTxtDocPath: TcxTextEdit
+    Left = 12
+    Top = 345
+    Hint = 
+      'Macros Available'#13#10'[USERHOME] = User Home Directory'#13#10'[NMATTER] = ' +
+      'Matter Number'#13#10'[TEMPDIR] = User'#39's Temp Directory'#13#10'[TEMPFILE] = M' +
+      'ake a Temporary File'#13#10'[DATE] = System Date'#13#10'[TIME] = System Time' +
+      #13#10'[DATETIME] = System Date and Time'#13#10'[CLIENTID] = Client Code'#13#10'[' +
+      'FILEID]=File Number'#13#10'[AUTHOR]=Matter Author'#13#10'[USERINITIALS]=Axio' +
+      'm User Code '#13#10'[DOCSEQUENCE]=Document Number within Matter'#13#10'[DOCI' +
+      'D]=Document ID'
+    Properties.ReadOnly = True
+    TabOrder = 11
+    Width = 325
+  end
+  object btnEditMatter: TcxButtonEdit
+    Left = 122
+    Top = 7
+    Properties.Buttons = <
+      item
+        Default = True
+        Glyph.SourceDPI = 96
+        Glyph.Data = {
+          89504E470D0A1A0A0000000D4948445200000010000000100403000000EDDDE2
+          520000000373424954080808DBE14FE000000027504C5445FFFFFFFF9900FF99
+          00FF9900FF9900FF9900FF9900FF9900FF9900FF9900FF9900FF9900FF990080
+          633F910000000D74524E5300334466778899AABBCCDDEEFFD17E4CC500000009
+          7048597300000AF000000AF00142AC34980000002074455874536F6674776172
+          65004D6163726F6D656469612046697265776F726B73204D58BB912A24000000
+          3E49444154789C6360800113170108E388EB0208E300438B3110280019222E40
+          3011C80083248603191D20B09DE1C01908208DB105C6009BEBE2E20C770500A3
+          673AAFB9E89D040000000049454E44AE426082}
+        Kind = bkGlyph
+      end>
+    TabOrder = 17
+    Text = 'btnEditMatter'
+    OnExit = btnEditMatterExit
+    Width = 134
+  end
+  object ImageList1: TImageList
+    Left = 197
+    Top = 153
+  end
+  object qryEmployee: TOraQuery
+    Session = dmSaveDoc.orsInsight
+    SQL.Strings = (
+      'select code, name '
+      'from '
+      'employee '
+      'where active = '#39'Y'#39' '
+      'order by code')
+    Left = 122
+    Top = 194
+  end
+  object dsEmployee: TOraDataSource
+    DataSet = qryEmployee
+    Left = 15
+    Top = 180
+  end
+  object qryPrecCategory: TOraQuery
+    Session = dmSaveDoc.orsInsight
+    SQL.Strings = (
+      'select * from PRECCATEGORY'
+      'order by descr')
+    Left = 132
+    Top = 119
+  end
+  object dsPrecCategory: TOraDataSource
+    DataSet = qryPrecCategory
+    Left = 209
+    Top = 125
+  end
+  object qryPrecClassification: TOraQuery
+    Session = dmSaveDoc.orsInsight
+    SQL.Strings = (
+      'select * from PRECCLASSIFICATION'
+      'order by descr')
+    Left = 133
+    Top = 274
+  end
+  object dsPrecClassification: TOraDataSource
+    DataSet = qryPrecClassification
+    Left = 179
+    Top = 66
+  end
+  object qryScaleCost: TOraQuery
+    Session = dmSaveDoc.orsInsight
+    SQL.Strings = (
+      'SELECT '
+      
+        '  CODE, TYPE, CREATED, DESCR, NOTES, UNIT, PARENT, DAYS, DEFAULT' +
+        'TIME, nvl(AMOUNT,0) AS AMOUNT,  '
+      
+        '  NVL(RATE,0) AS RATE, BILLTYPE, ZERO_FEE, PAID_YN, LEAVE_YN, AC' +
+        'TIVE'
+      ' FROM SCALECOST '
+      'where active = '#39'Y'#39
+      'ORDER BY CODE')
+    Left = 196
+    Top = 358
+  end
+  object dsScaleCost: TOraDataSource
+    DataSet = qryScaleCost
+    Left = 276
+    Top = 360
+  end
+end

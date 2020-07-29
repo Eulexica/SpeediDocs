@@ -1,0 +1,238 @@
+unit LoginDetails;
+
+interface
+
+uses
+  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
+  Dialogs, StdCtrls, Registry, SaveDoc, SpeediDocs_IMPL;
+
+type
+  TfrmLoginSetup = class(TForm)
+    GroupBox1: TGroupBox;
+    edUserName: TEdit;
+    edPassword: TEdit;
+    Label1: TLabel;
+    Label2: TLabel;
+    Button1: TButton;
+    Database: TGroupBox;
+    Label3: TLabel;
+    edServerName: TEdit;
+    edDatabase: TEdit;
+    Label4: TLabel;
+    Label5: TLabel;
+    edPort: TEdit;
+    GroupBox2: TGroupBox;
+    chkShowMatterList: TCheckBox;
+    chkSaveIncoming: TCheckBox;
+    chkSaveOutgoing: TCheckBox;
+    chkSaveSentEmail: TCheckBox;
+    btnCancel: TButton;
+    chkRemoveEmail: TCheckBox;
+    chkLogEvents: TCheckBox;
+    procedure Button1Click(Sender: TObject);
+    procedure chkShowMatterListClick(Sender: TObject);
+    procedure chkSaveIncomingClick(Sender: TObject);
+    procedure chkSaveOutgoingClick(Sender: TObject);
+    procedure chkSaveSentEmailClick(Sender: TObject);
+    procedure chkRemoveEmailClick(Sender: TObject);
+    procedure chkLogEventsClick(Sender: TObject);
+    procedure FormShow(Sender: TObject);
+  private
+    { Private declarations }
+     LRegAxiom: TRegistry;
+//     sRegistryRoot: string;
+  public
+    { Public declarations }
+  end;
+
+var
+  frmLoginSetup: TfrmLoginSetup;
+
+implementation
+
+
+{$R *.dfm}
+
+procedure TfrmLoginSetup.Button1Click(Sender: TObject);
+var
+  regAxiom: TRegistry;
+begin
+   regAxiom := TRegistry.Create;
+   try
+      regAxiom.RootKey := HKEY_CURRENT_USER;
+      if regAxiom.OpenKey(csRegistryRoot, True) then
+      begin
+         regAxiom.WriteString('Net','Y');
+         regAxiom.WriteString('Server Name',edServerName.Text+':'+edPort.Text+':'+edDatabase.Text);
+         regAxiom.WriteString('User Name',edUserName.Text);
+         regAxiom.WriteString('Password',edPassword.Text);
+         regAxiom.CloseKey;
+      end;
+   finally
+      regAxiom.Free;
+   end;
+   Close;
+end;
+
+procedure TfrmLoginSetup.chkLogEventsClick(Sender: TObject);
+begin
+   LregAxiom := TRegistry.Create;
+   try
+      LregAxiom.RootKey := HKEY_CURRENT_USER;
+      LregAxiom.OpenKey(csRegistryRoot, True);
+      if (chkLogEvents.Checked = True) then
+      begin
+         LregAxiom.WriteString('EventLog','Y');
+         AddInModule.bLogFile := True;
+      end
+      else
+      begin
+         LregAxiom.WriteString('EventLog','N');
+         AddInModule.bLogFile := False;
+      end;
+   finally
+      LregAxiom.Free;
+   end;
+end;
+
+procedure TfrmLoginSetup.chkRemoveEmailClick(Sender: TObject);
+begin
+   LregAxiom := TRegistry.Create;
+   try
+      LregAxiom.RootKey := HKEY_CURRENT_USER;
+      LregAxiom.OpenKey(csRegistryRoot, True);
+      if (chkRemoveEmail.Checked = True) then
+      begin
+         LregAxiom.WriteString('RemoveSavedEmails','Y');
+      end
+      else
+      begin
+         LregAxiom.WriteString('RemoveSavedEmails','N');
+      end;
+   finally
+      LregAxiom.Free;
+   end;
+end;
+
+procedure TfrmLoginSetup.chkSaveIncomingClick(Sender: TObject);
+begin
+   LregAxiom := TRegistry.Create;
+   try
+      LregAxiom.RootKey := HKEY_CURRENT_USER;
+      LregAxiom.OpenKey(csRegistryRoot, True);
+      if (chkShowMatterList.Checked = True) then
+      begin
+         LregAxiom.WriteString('SaveIncomingEmails','Y');
+      end
+      else
+      begin
+         LregAxiom.WriteString('SaveIncomingEmails','N');
+      end;
+   finally
+      LregAxiom.Free;
+   end;
+end;
+
+procedure TfrmLoginSetup.chkSaveOutgoingClick(Sender: TObject);
+begin
+   LregAxiom := TRegistry.Create;
+   try
+      LregAxiom.RootKey := HKEY_CURRENT_USER;
+      LregAxiom.OpenKey(csRegistryRoot, True);
+      if (chkSaveOutgoing.Checked = True) then
+      begin
+         LregAxiom.WriteString('SaveOutgoingEmails','Y');
+      end
+      else
+      begin
+         LregAxiom.WriteString('SaveOutgoingEmails','N');
+      end;
+   finally
+      LregAxiom.Free;
+   end;
+end;
+
+procedure TfrmLoginSetup.chkSaveSentEmailClick(Sender: TObject);
+begin
+   LregAxiom := TRegistry.Create;
+   try
+      LregAxiom.RootKey := HKEY_CURRENT_USER;
+      LregAxiom.OpenKey(csRegistryRoot, True);
+      if (chkSaveSentEmail.Checked = True) then
+      begin
+         LregAxiom.WriteString('SaveSentEmail','Y');
+      end
+      else
+      begin
+         LregAxiom.WriteString('SaveSentEmail','N');
+      end;
+   finally
+      LregAxiom.Free;
+   end;
+end;
+
+procedure TfrmLoginSetup.chkShowMatterListClick(Sender: TObject);
+begin
+   LregAxiom := TRegistry.Create;
+   try
+      LregAxiom.RootKey := HKEY_CURRENT_USER;
+      LregAxiom.OpenKey(csRegistryRoot, True);
+      if (chkShowMatterList.Checked = True) then
+      begin
+         LregAxiom.WriteString('ShowMatterList','Y');
+      end
+      else
+      begin
+         LregAxiom.WriteString('ShowMatterList','N');
+      end;
+   finally
+      LregAxiom.Free;
+   end;
+end;
+
+procedure TfrmLoginSetup.FormShow(Sender: TObject);
+var
+   LoginStr, s: string;
+begin
+   chkShowMatterList.OnClick  := nil;
+   chkSaveIncoming.OnClick    := nil;
+   chkSaveOutgoing.OnClick    := nil;
+   chkSaveSentEmail.OnClick   := nil;
+   chkLogEvents.OnClick       := nil;
+   LregAxiom := TRegistry.Create;
+   try
+      LregAxiom.RootKey := HKEY_CURRENT_USER;
+      LregAxiom.OpenKey(csRegistryRoot, False);
+
+      s := Copy(LregAxiom.ReadString('Server Name'),1,Pos(':',LregAxiom.ReadString('Server Name'))-1);
+      LoginStr := Copy(LregAxiom.ReadString('Server Name'),Pos(':',LregAxiom.ReadString('Server Name'))+1, Length(LregAxiom.ReadString('Server Name')) - Pos(':',LregAxiom.ReadString('Server Name')) );
+      if s <> '' then
+         edServerName.Text := s;
+
+      s := Copy(LoginStr,1,Pos(':',LoginStr)-1);
+      LoginStr := Copy(LoginStr,Pos(':',LoginStr)+1, Length(LoginStr));
+      if s <> '' then
+         edPort.Text := s;
+
+      s := LoginStr;
+      if s <> '' then
+         edDatabase.Text := s;
+
+      edUserName.Text := LregAxiom.ReadString('User Name');
+      edPassword.Text := LregAxiom.ReadString('Password');
+      chkShowMatterList.Checked  := (LregAxiom.ReadString('ShowMatterList') = 'Y');
+      chkSaveIncoming.Checked    := (LregAxiom.ReadString('SaveIncomingEmails') = 'Y');
+      chkSaveOutgoing.Checked    := (LregAxiom.ReadString('SaveOutgoingEmails') = 'Y');
+      chkSaveSentEmail.Checked   := (LregAxiom.ReadString('SaveSentEmail') = 'Y');
+      chkLogEvents.checked       := (LregAxiom.ReadString('EventLog') = 'Y');
+   finally
+     chkShowMatterList.OnClick   := chkShowMatterListClick;
+     chkSaveIncoming.OnClick     := chkSaveIncomingClick;
+     chkSaveOutgoing.OnClick     := chkSaveOutgoingClick;
+     chkSaveSentEmail.OnClick    := chkSaveSentEmailClick;
+     chkLogEvents.OnClick        := chkLogEventsClick;
+     LregAxiom.Free;
+   end;
+end;
+
+end.

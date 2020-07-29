@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<BorlandProject>
+	<Transactions>
+    <Transaction>2017/04/12 11:14:48.000.438,=D:\Insight_XE4_Source\SpeediDocs\Unit1.pas</Transaction>
+    <Transaction>2017/04/12 11:18:32.000.173,D:\Insight_XE4_Source\SpeediDocs\AdditionalInfo.dfm=D:\Insight_XE4_Source\SpeediDocs\Unit1.dfm</Transaction>
+    <Transaction>2017/04/12 11:18:32.000.173,D:\Insight_XE4_Source\SpeediDocs\AdditionalInfo.pas=D:\Insight_XE4_Source\SpeediDocs\Unit1.pas</Transaction>
+    <Transaction>2018/03/06 17:35:32.000.454,D:\Insight_XE4_Source\SpeediDocs\SaveprecDetails.pas=</Transaction>
+    <Transaction>2018/03/07 11:39:41.000.232,=D:\Insight_XE4_Source\SpeediDocs\SaveprecDetails.pas</Transaction>
+    <Transaction>2019/04/06 21:01:43.000.340,D:\Insight_XE4_Source\SpeediDocs\OutlookUnit.pas=</Transaction>
+    <Transaction>2019/04/06 21:47:22.000.480,D:\Insight_XE4_Source\SpeediDocs\AdditionalInfo.pas=</Transaction>
+  </Transactions>
+</BorlandProject>

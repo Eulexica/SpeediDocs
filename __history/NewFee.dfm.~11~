@@ -1,0 +1,490 @@
+object frmNewFee: TfrmNewFee
+  Left = 0
+  Top = 0
+  BorderStyle = bsDialog
+  Caption = 'New Fee'
+  ClientHeight = 460
+  ClientWidth = 401
+  Color = clBtnFace
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -13
+  Font.Name = 'Segoe UI'
+  Font.Style = []
+  OldCreateOrder = False
+  Position = poOwnerFormCenter
+  OnClose = FormClose
+  OnCloseQuery = FormCloseQuery
+  OnShow = FormShow
+  PixelsPerInch = 106
+  TextHeight = 17
+  object lblMatterDesc: TLabel
+    Left = 204
+    Top = 12
+    Width = 173
+    Height = 38
+    AutoSize = False
+    WordWrap = True
+  end
+  object lblClient: TLabel
+    Left = 86
+    Top = 56
+    Width = 295
+    Height = 17
+    AutoSize = False
+  end
+  object Label3: TLabel
+    Left = 37
+    Top = 11
+    Width = 42
+    Height = 17
+    Caption = 'Matter:'
+  end
+  object Label4: TLabel
+    Left = 50
+    Top = 83
+    Width = 30
+    Height = 17
+    Caption = 'Date:'
+  end
+  object Label5: TLabel
+    Left = 35
+    Top = 113
+    Width = 42
+    Height = 17
+    Caption = 'Author:'
+  end
+  object Label6: TLabel
+    Left = 22
+    Top = 143
+    Width = 56
+    Height = 17
+    Caption = 'Template:'
+  end
+  object Label7: TLabel
+    Left = 9
+    Top = 169
+    Width = 69
+    Height = 17
+    Caption = 'Description:'
+  end
+  object lblUnits: TLabel
+    Left = 50
+    Top = 286
+    Width = 29
+    Height = 17
+    Caption = 'Units'
+  end
+  object Label9: TLabel
+    Left = 143
+    Top = 286
+    Width = 26
+    Height = 17
+    Caption = 'Rate'
+  end
+  object Label10: TLabel
+    Left = 246
+    Top = 286
+    Width = 45
+    Height = 17
+    Caption = 'Amount'
+  end
+  object Label11: TLabel
+    Left = 32
+    Top = 401
+    Width = 46
+    Height = 17
+    Caption = 'Minutes'
+  end
+  object Label12: TLabel
+    Left = 61
+    Top = 371
+    Width = 19
+    Height = 17
+    Caption = 'Tax'
+  end
+  object Label13: TLabel
+    Left = 32
+    Top = 316
+    Width = 49
+    Height = 17
+    Caption = 'Tax Rate'
+  end
+  object Label14: TLabel
+    Left = 9
+    Top = 345
+    Width = 69
+    Height = 17
+    Caption = 'Department'
+  end
+  object cmbTemplate: TJvDBLookupEdit
+    Left = 86
+    Top = 139
+    Width = 296
+    Height = 25
+    DropDownCount = 10
+    LookupDisplay = 'DESCR;BILLTYPE'
+    LookupField = 'CODE'
+    LookupSource = dsFeeBasisList
+    TabOrder = 2
+    Text = ''
+    OnCloseUp = TemplateChange
+  end
+  object dfItems: TEdit
+    Left = 53
+    Top = 253
+    Width = 27
+    Height = 25
+    TabOrder = 4
+    Text = '0'
+    Visible = False
+  end
+  object neUnits: TEdit
+    Left = 86
+    Top = 282
+    Width = 33
+    Height = 25
+    Alignment = taRightJustify
+    TabOrder = 5
+    Text = '1'
+    OnChange = neUnitsChange
+  end
+  object cbTaxType: TJvDBLookupEdit
+    Left = 86
+    Top = 313
+    Width = 296
+    Height = 25
+    LookupDisplay = 'CODE'
+    LookupField = 'CODE'
+    LookupSource = dsTaxType
+    TabOrder = 6
+    Text = ''
+    OnChange = cbTaxTypeChange
+  end
+  object cbDept: TJvDBLookupEdit
+    Left = 86
+    Top = 341
+    Width = 296
+    Height = 25
+    LookupDisplay = 'CODE'
+    LookupField = 'CODE'
+    LookupSource = dsEmpDept
+    TabOrder = 7
+    Text = ''
+  end
+  object dtpCreated: TDateTimePicker
+    Left = 86
+    Top = 79
+    Width = 112
+    Height = 25
+    Date = 40764.667509444440000000
+    Time = 40764.667509444440000000
+    TabOrder = 0
+  end
+  object neRate: TJvCalcEdit
+    Left = 176
+    Top = 282
+    Width = 54
+    Height = 26
+    AutoSize = False
+    DisplayFormat = '$,0.##'
+    ShowButton = False
+    TabOrder = 8
+    DecimalPlacesAlwaysShown = False
+  end
+  object neAmount: TJvCalcEdit
+    Left = 297
+    Top = 282
+    Width = 87
+    Height = 25
+    DisplayFormat = '$,0.##'
+    ShowButton = False
+    TabOrder = 9
+    DecimalPlacesAlwaysShown = False
+  end
+  object neMinutes: TJvCalcEdit
+    Left = 86
+    Top = 400
+    Width = 51
+    Height = 25
+    Enabled = False
+    ShowButton = False
+    TabOrder = 10
+    DecimalPlacesAlwaysShown = False
+  end
+  object neTax: TJvCalcEdit
+    Left = 86
+    Top = 369
+    Width = 100
+    Height = 25
+    DisplayFormat = '$,0.##'
+    Enabled = False
+    ReadOnly = True
+    ShowButton = False
+    TabOrder = 11
+    DecimalPlacesAlwaysShown = False
+  end
+  object cbFeeBasis: TJvDBLookupEdit
+    Left = 9
+    Top = 558
+    Width = 296
+    Height = 25
+    LookupDisplay = 'CODE'
+    LookupField = 'CODE'
+    TabOrder = 12
+    Text = ''
+  end
+  object BitBtn1: TBitBtn
+    Left = 201
+    Top = 401
+    Width = 85
+    Height = 29
+    Kind = bkOK
+    NumGlyphs = 2
+    TabOrder = 13
+    OnClick = BitBtn1Click
+  end
+  object BitBtn2: TBitBtn
+    Left = 292
+    Top = 401
+    Width = 85
+    Height = 29
+    Kind = bkCancel
+    NumGlyphs = 2
+    TabOrder = 15
+  end
+  object cbAuthor: TcxLookupComboBox
+    Left = 86
+    Top = 110
+    Properties.ClearKey = 46
+    Properties.KeyFieldNames = 'CODE'
+    Properties.ListColumns = <
+      item
+        FieldName = 'NAME'
+      end>
+    Properties.ListOptions.GridLines = glNone
+    Properties.ListOptions.ShowHeader = False
+    Properties.ListSource = dsFeeEarners
+    Properties.OnChange = AuthorChange
+    TabOrder = 1
+    Width = 296
+  end
+  object mmoDesc: TcxMemo
+    Left = 86
+    Top = 170
+    TabOrder = 3
+    Height = 108
+    Width = 297
+  end
+  object StatusBar: TStatusBar
+    Left = 0
+    Top = 439
+    Width = 401
+    Height = 21
+    Panels = <
+      item
+        Width = 340
+      end>
+    ParentFont = True
+    UseSystemFont = False
+  end
+  object btnEditMatter: TcxButtonEdit
+    Left = 85
+    Top = 8
+    Properties.Buttons = <
+      item
+        Default = True
+        Glyph.SourceDPI = 96
+        Glyph.Data = {
+          89504E470D0A1A0A0000000D4948445200000010000000100403000000EDDDE2
+          520000000373424954080808DBE14FE000000027504C5445FFFFFFFF9900FF99
+          00FF9900FF9900FF9900FF9900FF9900FF9900FF9900FF9900FF9900FF990080
+          633F910000000D74524E5300334466778899AABBCCDDEEFFD17E4CC500000009
+          7048597300000AF000000AF00142AC34980000002074455874536F6674776172
+          65004D6163726F6D656469612046697265776F726B73204D58BB912A24000000
+          3E49444154789C6360800113170108E388EB0208E300438B3110280019222E40
+          3011C80083248603191D20B09DE1C01908208DB105C6009BEBE2E20C770500A3
+          673AAFB9E89D040000000049454E44AE426082}
+        Kind = bkGlyph
+      end>
+    Properties.OnButtonClick = btnEditMatterPropertiesButtonClick
+    TabOrder = 16
+    OnExit = btnEditMatterExit
+    Width = 134
+  end
+  object qryMRUList: TOraQuery
+    Session = dmSaveDoc.orsInsight
+    SQL.Strings = (
+      
+        'SELECT trim(M.FILEID) as FILEID,trim(P.SEARCH) AS SEARCH, trim(M' +
+        '.SHORTDESCR) AS SHORTDESCR, idx'
+      'FROM MATTER M, PHONEBOOK P,OPENLIST O'
+      'WHERE upper(O.AUTHOR) = upper(:P_Author)'
+      'AND O.TYPE = :P_Type'
+      'AND O.CODE = M.FILEID'
+      'AND M.NCLIENT = P.NCLIENT'
+      'union'
+      'SELECT '#39'Search...'#39','#39#39','#39#39',999'
+      'FROM dual'
+      'ORDER BY 3')
+    Left = 187
+    Top = 34
+    ParamData = <
+      item
+        DataType = ftUnknown
+        Name = 'P_Author'
+        Value = nil
+      end
+      item
+        DataType = ftUnknown
+        Name = 'P_Type'
+        Value = nil
+      end>
+  end
+  object dsMRUList: TOraDataSource
+    DataSet = qryMRUList
+    Left = 326
+    Top = 6
+  end
+  object dsFeeEarners: TOraDataSource
+    DataSet = qFeeEarners
+    Left = 352
+    Top = 72
+  end
+  object dsFee: TOraDataSource
+    DataSet = qryFee
+    Left = 360
+    Top = 168
+  end
+  object dsEmpDept: TOraDataSource
+    DataSet = qryEmpDept
+    Left = 328
+    Top = 240
+  end
+  object dsFeeBasisList: TOraDataSource
+    DataSet = qryFeeBasisList
+    Left = 320
+    Top = 280
+  end
+  object dsTaxType: TOraDataSource
+    DataSet = qryTaxType
+    Left = 320
+    Top = 328
+  end
+  object qFeeEarners: TOraQuery
+    Session = dmSaveDoc.orsInsight
+    SQL.Strings = (
+      'SELECT DISTINCT CODE, NAME, DEPT'
+      'FROM'
+      '(SELECT '
+      'CODE, '
+      'NAME,'
+      'DEPT '
+      'FROM EMPLOYEE '
+      'WHERE'
+      'ACTIVE = '#39'Y'#39' AND '
+      'ISFEEEARNER = '#39'Y'#39
+      'UNION ALL'
+      'SELECT'
+      'CODE,'
+      'NAME,'
+      'DEPT'
+      'FROM EMPLOYEE'
+      'WHERE'
+      'CODE = :CODE)'
+      'ORDER BY CODE')
+    AutoCommit = False
+    Left = 304
+    Top = 72
+    ParamData = <
+      item
+        DataType = ftUnknown
+        Name = 'CODE'
+        Value = nil
+      end>
+    object qFeeEarnersCODE: TStringField
+      FieldName = 'CODE'
+      Size = 3
+    end
+    object qFeeEarnersNAME: TStringField
+      FieldName = 'NAME'
+      Size = 40
+    end
+    object qFeeEarnersDEPT: TStringField
+      FieldName = 'DEPT'
+      Size = 3
+    end
+  end
+  object qryScaleCost: TOraQuery
+    Session = dmSaveDoc.orsInsight
+    SQL.Strings = (
+      
+        'SELECT nvl(AMOUNT,0) as amount, nvl(RATE,0) as rate, DESCR, UNIT' +
+        ', ZERO_FEE '
+      'FROM SCALECOST '
+      'WHERE CODE = :P_Code')
+    Left = 344
+    Top = 120
+    ParamData = <
+      item
+        DataType = ftUnknown
+        Name = 'P_Code'
+        Value = nil
+      end>
+  end
+  object qryFee: TSmartQuery
+    Session = dmSaveDoc.orsInsight
+    SQL.Strings = (
+      'SELECT F.*, F.ROWID '
+      'FROM '
+      'FEE F '
+      'WHERE F.NFEE = :P_Nfee')
+    Left = 328
+    Top = 168
+    ParamData = <
+      item
+        DataType = ftUnknown
+        Name = 'P_Nfee'
+        Value = nil
+      end>
+  end
+  object qryEmpDept: TOraQuery
+    Session = dmSaveDoc.orsInsight
+    SQL.Strings = (
+      'select * from empdept'
+      'order by descr')
+    Left = 197
+    Top = 182
+  end
+  object qryFeeBasisList: TOraQuery
+    Session = dmSaveDoc.orsInsight
+    SQL.Strings = (
+      'select CODE, CODE ||'#39' - '#39'||DESCR as descr, BILLTYPE '
+      'from scalecost'
+      'order by descr')
+    Left = 257
+    Top = 288
+  end
+  object qryTaxType: TOraQuery
+    Session = dmSaveDoc.orsInsight
+    SQL.Strings = (
+      'select code,descr from taxtype')
+    Left = 265
+    Top = 328
+  end
+  object qryBillType: TOraQuery
+    Session = dmSaveDoc.orsInsight
+    SQL.Strings = (
+      'SELECT f.billtype as BillType FROM FeeBasis f, Matter m'
+      'WHERE f.code = m.feebasis'
+      'AND m.nmatter = :p_nmatter')
+    Left = 392
+    Top = 360
+    ParamData = <
+      item
+        DataType = ftUnknown
+        Name = 'p_nmatter'
+        Value = nil
+      end>
+  end
+end

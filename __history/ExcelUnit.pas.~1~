@@ -1,0 +1,376 @@
+unit ExcelUnit;
+
+interface
+
+uses Excel_TLB, Office_TLB, SpeediDocs_IMPL, ActiveX, ComObj, Variants,
+     SaveDocFunc, SysUtils, System.Classes, Windows, SaveDoc, DB, ComServ,
+     adxAddIn, savedocdetails;
+
+  function SaveExcel(DocSequence: string; rgStorageItemIndex: integer; ATxtDocPath: string;
+                      ANewCopy, AOverwrite: boolean; AFileID, AAuthor, ADocName: string;
+                      APrec_Category, APrec_Classification: integer; AKeywords: string;
+                      ADocID: integer = 1): boolean;
+   procedure SetExcelApp(WordApp: _Application);
+   function GetExcelApp(): _Application;
+
+
+
+implementation
+
+var
+    tmpFileName: string;
+    tmpdir: string;
+    FFileID: string;
+    FOldFileID: string;
+    FEditing: boolean;
+    MSExcel: _Application;
+
+
+function SaveExcel(DocSequence: string; rgStorageItemIndex: integer; ATxtDocPath: string;
+                      ANewCopy, AOverwrite: boolean; AFileID, AAuthor, ADocName: string;
+                      APrec_Category, APrec_Classification: integer; AKeywords: string;
+                      ADocID: integer = 1): boolean;
+var
+//  varWord, varDocs, PropName, varDoc: OleVariant;
+//   PropName: OleVariant;
+  DocName,
+  SavedInDB,
+  AFileName,
+  ltmpdir,
+  AMacro,
+  lDocID,
+  AExt: string;
+  nCat, nClass: integer;
+  MSExcel: _Application;
+//  MSDoc: _Document;
+  Unknown: IUnknown;
+  OLEResult: HResult;
+  OLEvar: OleVariant;
+  CustomDocProps, Item, Value,
+  AppVersion, FileFormatNum: OleVariant;
+  i,
+  x,
+  count: integer;
+  PropValues: TStrings;
+  bMoveSuccess: boolean;
+  IProps: DocumentProperties;
+  IProp: DocumentProperty;
+  PropValue: OleVariant;
+  PropName: widestring;
+begin
+//   SaveDocument := False;
+   bMoveSuccess := True;
+
+   OLEResult := GetActiveObject(CLASS_ExcelApplication, nil, Unknown);
+   if (OLEResult = MK_E_UNAVAILABLE) then
+      MSExcel := CoExcelApplication.Create          //get MS Excel running
+   else
+   begin
+      OleCheck(OLEResult);                           //check for errors
+      OleCheck(Unknown.QueryInterface(_Application, MSExcel));
+   end;
+
+
+   if(not VarIsNull(MSExcel)) then
+   begin
+      try
+//         MSExcel.ActiveWorkbook.ap;
+         AppVersion := MSExcel.Application.Version[adxLCID];
+         case rgStorageItemIndex of
+           0:  begin
+                  ltmpdir := ParseMacros(tmpFileName,
+                             TableInteger('MATTER','FILEID',FFileID,'NMATTER'),
+                             StrToInt(DocSequence), ADocName);
+                  ltmpDir := tmpdir+ExtractFileName(ltmpdir);  // copy(ltmpDir, 1,length(ltmpdir) - 1);
+//                 if not DirectoryExists(ltmpdir) then
+//                    ForceDirectories(ltmpdir);
+
+                  if ExtractFileExt(ltmpdir) = '' then
+                     ltmpdir := ltmpdir + '.xlsx';
+
+                  Value := ltmpdir;
+                  Item := CustomDocProps.Item[7];
+                  Item.Value := Value;
+
+
+                  MSExcel.ActiveWorkbook.SaveAs(Value, EmptyParam, EmptyParam, EmptyParam, EmptyParam, EmptyParam, EmptyParam,
+                                                EmptyParam, EmptyParam, EmptyParam, EmptyParam, EmptyParam,adxLCID);
+                  tmpFileName := ltmpdir;
+               end;
+           1:  begin
+                  if (FOldFileID <> AFileID) and (FOldFileID <> '') and (not ANewCopy) then
+                  begin
+                     tmpFileName := SystemString('DRAG_DEFAULT_DIRECTORY');
+                     tmpFileName := tmpFileName + '\' + ExtractFileName(ATxtDocPath);
+
+                     AExt := ExtractFileExt(tmpFileName);
+                     tmpFileName := Copy (tmpFileName,1, Length(tmpFileName)- Length(AExt));
+                     tmpFileName := tmpFileName + '_' + '[DOCSEQUENCE]';
+                     tmpFileName := tmpFileName + AExt;
+
+                     tmpFileName := ParseMacros(tmpFileName,
+                                    TableInteger('MATTER','FILEID',uppercase(AFileID),'NMATTER'),
+                                    ADocID, ADocName);
+
+                     if FOldFileID <> '' then
+                        bMoveSuccess := MoveMatterDoc(tmpFileName, ATxtDocPath);
+                  end
+                  else
+                  if (not FEditing) then
+                  begin
+                     if ATxtDocPath = '' then
+                     begin
+                        ATxtDocPath := SystemString('DOC_DEFAULT_DIRECTORY');
+//                        btnTxtDocPath.Text
+                     end;
+                     tmpFileName := ATxtDocPath;
+
+                     AExt := ExtractFileExt(tmpFileName);
+                     AFileName := ExtractFileName(tmpFileName);
+
+                     tmpFileName := Copy (tmpFileName,1, Length(tmpFileName)- Length(AExt));
+                     if AFileName = '' then
+                        tmpFileName := tmpFileName + ADocName + '_[DOCSEQUENCE]'
+                     else
+                        tmpFileName := tmpFileName + '_[DOCSEQUENCE]';
+
+                     tmpFileName := ParseMacros(tmpFileName,
+                                    TableInteger('MATTER','FILEID',uppercase(AFileID),'NMATTER'),
+                                    ADocID{StrToInt(DocSequence)}, ADocName);
+                  end
+                  else
+                  begin
+                     tmpFileName := tmpFileName;
+                  end;
+                  if ExtractFileName(tmpFileName) = '' then
+                     tmpFileName  := tmpFileName + AFileID;
+
+                  if AppVersion < 12 then
+                  begin
+                     AExt := '.xls';
+                     FileFormatNum := -4143;
+                  end
+                  else
+                  begin
+                    Case MSExcel.ActiveWorkbook.FileFormat[adxLCID] of
+                      51: begin
+                            AExt := '.xlsx';
+                            FileFormatNum := 51;
+                          end;
+                      52: begin
+                            If (MSExcel.ActiveWorkbook.VBProject.Name <> '') Then
+                            begin
+                              AExt := '.xlsm';
+                              FileFormatNum := 52;
+                            end
+                            Else
+                            begin
+                              AExt := '.xlsx';
+                              FileFormatNum := 51;
+                            end;
+                          end;
+                      56: begin
+                            AExt := '.xls';
+                            FileFormatNum := 56;
+                          end;
+                      Else begin
+                              AExt := '.xlsb';
+                              FileFormatNum := 50;
+                            end;
+                    End;
+                  end;
+                  tmpFileName := tmpFileName + AExt;
+
+                  if ExtractFileExt(tmpFileName) = '' then
+                     tmpFileName := tmpFileName + AExt;  //'.doc';
+
+                  if ((DocName = '') or (pos('Document', DocName) > 0) or
+                     (ExtractFileName(ATxtDocPath) <> DocName)) and (AOverwrite = False) then
+                  begin
+                     if not DirectoryExists(ExtractFileDir(tmpFileName)) then
+                        ForceDirectories(ExtractFileDir(tmpFileName));
+                     Value := tmpFileName;
+
+                    //*********************************
+                    GetExcelApp.ActiveWorkbook.CustomDocumentProperties.QueryInterface(IID_DocumentProperties, IProps);
+                    if Assigned(IProps) then
+                    try
+                       IProps.Get_Count(Count);  //***values already set
+                       if (Count > 0) then
+                       begin
+                         for i := 1 to length(frmSaveDocDetails.AWordProps) do
+                         begin
+                            IProps.Get_Item(i, frmSaveDocDetails.LadxLCID, IProp);
+                            if Assigned(IProp) then
+                            try
+                               IProp.Delete;
+                         finally
+                               IProp := nil;
+                            end;
+                         end;
+                       end;
+
+                       begin
+                          try
+                             FFileID := AFileID;
+                             PropName := 'MatterNo';
+                             IProps.Add(PropName, False, msoPropertyTypeString, FFileID, EmptyParam, frmSaveDocDetails.LadxLCID, IProp);
+
+                             LDocID := IntToStr(ADocID);
+                             PropName := 'DocID';
+                             IProps.Add(PropName, False, msoPropertyTypeString, LDocID, EmptyParam, frmSaveDocDetails.LadxLCID, IProp);
+
+                             if varIsNull(APrec_Category) or
+                                (VarToStr(APrec_Category) = '') then
+                                nCat := -1
+                             else
+                             begin
+                                try
+                                   nCat := APrec_Category;
+                                except
+                                   nCat := -1;
+                                end;
+                             end;
+                             PropName := 'Prec_Category';
+                             IProps.Add(PropName, False, msoPropertyTypeString, IntToStr(nCat), EmptyParam, frmSaveDocDetails.LadxLCID, IProp);
+
+                             if varIsNull(APrec_Classification) or
+                                (VarToStr(APrec_Classification) = '') then
+                                nClass := -1
+                             else
+                             begin
+                                try
+                                   nClass := APrec_Classification;
+                                except
+                                   nClass := -1;
+                                end;
+                             end;
+                             PropName := 'Prec_Classification';
+                             IProps.Add(PropName, False, msoPropertyTypeString, IntToStr(nClass), EmptyParam, frmSaveDocDetails.LadxLCID, IProp);
+
+                             PropName := 'Doc_Keywords';
+                             IProps.Add(PropName, False, msoPropertyTypeString, AKeyWords, EmptyParam, frmSaveDocDetails.LadxLCID, IProp);
+
+                              PropName := 'Doc_Precedent';
+                             IProps.Add(PropName, False, msoPropertyTypeString, ExtractFileName(tmpFileName{ATxtDocPath}), EmptyParam, frmSaveDocDetails.LadxLCID, IProp);
+
+
+                             // add author
+                              PropName := 'Doc_Author';
+                             IProps.Add(PropName, False, msoPropertyTypeString, AAuthor, EmptyParam, frmSaveDocDetails.LadxLCID, IProp);
+
+{                             case rgStorage.ItemIndex of
+                                0: SavedInDB := 'Y';
+                                1: SavedInDB := 'N';
+                             end; }
+                             SavedInDB := 'N';
+                             PropName := 'Saved_in_DB';
+                             IProps.Add(PropName, False, msoPropertyTypeString, SavedInDB, EmptyParam, frmSaveDocDetails.LadxLCID, IProp);
+
+
+                             // document description - title
+                             PropName := 'Doc_FileName';
+                             IProps.Add(PropName, False, msoPropertyTypeString, ADocName, EmptyParam, frmSaveDocDetails.LadxLCID, IProp);
+
+ {                            if cbPortalAccess.Checked then
+                                PropValues.Add('Y')
+                             else
+                                PropValues.Add('N');  }
+
+                             PropName := 'Portal_Access';
+                             PropValue := 'N';
+                             IProps.Add(PropName, False, msoPropertyTypeString, PropValue, EmptyParam, frmSaveDocDetails.LadxLCID, IProp);
+                          finally
+//                             MSExcel.ActiveWorkbook.Fields.Update;
+//                             GetWordApp.ActiveDocument.Save();
+                             IProp := nil;
+                          end;
+                       end;
+                    finally
+                       IProps := nil;
+                    end;
+
+               //****************************************************************************
+
+                     MSExcel.ActiveWorkbook.SaveAs(Value, FileFormatNum, EmptyParam, EmptyParam, EmptyParam, EmptyParam,
+                                                   xlNoChange, EmptyParam, EmptyParam, EmptyParam, EmptyParam, EmptyParam,adxLCID)
+                  end
+                  else
+                  begin
+                     MSExcel.ActiveWorkbook.Save(adxLCID);
+                  end;
+
+               end;
+         end;
+               try
+                  dmSaveDoc.qryMatterAttachments.FieldByName('docid').AsInteger := ADocID;
+                  dmSaveDoc.qryMatterAttachments.FieldByName('fileid').AsString := AFileid;
+                  dmSaveDoc.qryMatterAttachments.FieldByName('nmatter').AsInteger := TableInteger('MATTER','FILEID',AFileID,'nMatter');
+                  dmSaveDoc.qryMatterAttachments.FieldByName('auth1').AsString := AAuthor;  //  dmSaveDoc.UserID;
+                  if not FEditing then
+                     dmSaveDoc.qryMatterAttachments.FieldByName('D_CREATE').AsDateTime := Now;
+
+                  dmSaveDoc.qryMatterAttachments.FieldByName('IMAGEINDEX').AsInteger := 3;
+                  if rgStorageItemIndex = 0 then
+                     dmSaveDoc.qryMatterAttachments.FieldByName('DOC_NAME').AsString := ExtractFileName(tmpFileName)  //txtDocName.Text + '.doc'
+                  else
+                     dmSaveDoc.qryMatterAttachments.FieldByName('DOC_NAME').AsString := ExtractFileName(tmpFileName);
+                  dmSaveDoc.qryMatterAttachments.FieldByName('DESCR').AsString := ADocName;   // ExtractFileName(tmpFileName);
+                  dmSaveDoc.qryMatterAttachments.FieldByName('SEARCH').AsString := ADocName;
+                  dmSaveDoc.qryMatterAttachments.FieldByName('FILE_EXTENSION').AsString := Copy(ExtractFileExt(tmpFileName),2, Length(ExtractFileExt(tmpFileName)));
+                  dmSaveDoc.qryMatterAttachments.FieldByName('precedent_details').AsString := ADocName;
+                  dmSaveDoc.qryMatterAttachments.FieldByName('KEYWORDS').AsString := AKeywords;
+                  if APrec_Category > -1 then
+                     dmSaveDoc.qryMatterAttachments.FieldByName('NPRECCATEGORY').AsInteger := APrec_Category;
+                  if APrec_Classification > -1 then
+                     dmSaveDoc.qryMatterAttachments.FieldByName('NPRECCLASSIFICATION').AsInteger := APrec_Classification;
+
+//                  if cbPortalAccess.Checked then
+//                     dmSaveDoc.qryMatterAttachments.FieldByName('EXTERNAL_ACCESS').AsString := 'Y'
+//                  else
+                     dmSaveDoc.qryMatterAttachments.FieldByName('EXTERNAL_ACCESS').AsString := 'N';
+
+                  if FEditing then
+                  begin
+                     dmSaveDoc.qryMatterAttachments.FieldByName('D_MODIF').AsDateTime := Now;
+                     dmSaveDoc.qryMatterAttachments.FieldByName('auth2').AsString := dmSaveDoc.UserCode;
+                  end;
+                  if rgStorageItemIndex = 0 then
+                  begin
+                     TBlobField(dmSaveDoc.qryMatterAttachments.fieldByname('DOCUMENT')).LoadFromFile(tmpFileName);
+                  end
+                  else
+                  begin
+                     dmSaveDoc.qryMatterAttachments.FieldByName('PATH').AsString := IndexPath(tmpFileName, 'DOC_SHARE_PATH');
+                     dmSaveDoc.qryMatterAttachments.FieldByName('display_PATH').AsString := tmpFileName;
+                  end;
+
+                  dmSaveDoc.qryMatterAttachments.Post;
+                  dmSaveDoc.qryMatterAttachments.ApplyUpdates;
+                  dmSaveDoc.orsInsight.Commit;
+
+               except
+                  dmSaveDoc.orsInsight.Rollback;
+               end;
+
+//               SaveDocument := True;
+      except
+         on E: Exception do
+          begin
+//            SaveDocument := False;
+          end;
+      end;
+   end;
+end;
+
+procedure SetExcelApp(WordApp: _Application);
+begin
+   MSExcel := WordApp;
+end;
+
+function GetExcelApp(): _Application;
+begin
+   Result := MSExcel;
+end;
+
+end.

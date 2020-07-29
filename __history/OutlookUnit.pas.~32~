@@ -1,0 +1,673 @@
+unit OutlookUnit;
+
+interface
+
+uses SpeediDocs_IMPL, ActiveX, ComObj, Variants, SaveDocFunc, System.SysUtils,
+     System.Classes, Windows, SaveDoc, DB, Outlook2000, Office2000,
+     Messages, ShellAPI, System.StrUtils, Registry, SaveDocDetails,
+     System.Math, Outlook2010;
+
+const
+   WM_NEWMESSAGE = WM_USER + 1;
+//  NPR_FILEID: TRwMapiNamedProperty = (PropSetID: '{001b04db-360a-424e-ae80-3f1fce8c7458}'; PropID: $8000; PropName: 'NPR_FILEID'; PropType: PT_STRING8; PropKind: MNID_ID);
+
+
+   function SaveOutlookMessage(DocSequence: string; rgStorageItemIndex: integer; ATxtDocPath: string;
+                      ANewCopy, AOverwrite: boolean; AFileID, AAuthor, ADocName: string;
+                      APrec_Category, APrec_Classification: integer; AKeywords: string;
+                      AReceivedDate: TDateTime; AMail: Outlook2000.MailItem;
+                      AFromExplorer: boolean = False;
+                      ADocID: integer = -1; SaveTime: boolean = false;
+                      ATimeNarration: string = ''; ATimeUnits: integer = 1; ASent: boolean = False;
+                      ATask: string = ''): boolean;
+
+   procedure SentMessage(AMail: Outlook2000.MailItem; ANewEmail: boolean = False);
+   procedure InboxMessage(AMail: Outlook2000.MailItem; AFileID: string);
+//   procedure SetOutlookApp(OutlookApp: TOutlookApplication);
+
+   function WriteFileDetailsToDB(AParentDocID: integer; ANewDocName, AFileID, ADocDescr: string; ADocID: integer = -1): boolean;
+//   function UpdateAmount(AUnits: integer): currency;
+//   function CalcRate(ATemplate: string): currency;
+
+implementation
+
+var
+   tmpFileName:   string;
+   tmpdir:        string;
+   FFileID:       string;
+   FOldFileID:    string;
+   FEditing:      boolean;
+   FMail:         Outlook2000.MailItem;
+   LRegAxiom:     TRegistry;
+   dmSaveDoc:     TdmSaveDoc;
+
+function SaveOutlookMessage(DocSequence: string; rgStorageItemIndex: integer; ATxtDocPath: string;
+                            ANewCopy, AOverwrite: boolean; AFileID, AAuthor, ADocName: string;
+                            APrec_Category, APrec_Classification: integer; AKeywords: string;
+                            AReceivedDate: TDateTime; AMail: Outlook2000.MailItem;
+                            AFromExplorer: boolean = False;
+                            ADocID: integer = -1; SaveTime: boolean = false;
+                            ATimeNarration: string = ''; ATimeUnits: integer = 1; ASent: boolean = False;
+                            ATask: string = ''): boolean;
+var
+   OLEResult: HResult;
+   Unknown: IUnknown;
+   MailName: WideString;
+   lSubject,
+   lEmailFrom
+   ,FileID
+   ,AParsedDocName
+   ,lEmailTo
+   ,lTask
+   ,DispName
+   ,AExt
+   ,ADispName
+   ,ANewDocName
+   ,ASubject
+   ,AParsedDir
+   ,ADocDescr
+   ,ParsedVarDocName
+   ,ParsedOldDocName
+   ,VarDocName
+   ,RandFile : string;
+   up: UserProperty;
+   ups: UserProperties;
+   item: IDispatch;
+   sel: Selection;
+   LNMatter
+   ,lDocID
+   ,x
+   ,i
+   ,FHashPos
+   ,lTimeUnits
+   ,iCount
+   ,AParentDocID,
+   lnRecipCount : integer;
+   lRate
+   ,lAmount: double;
+   bUseSubject: boolean;
+   lAttachments
+   ,Attachment: OLEVariant;
+   lNewFolder,
+   lParentFolder: MapiFolder;
+   ns : Outlook2000._NameSpace;
+   lMailCopy: Outlook2000.MailItem;
+   Flags
+   ,AType: variant;
+   lRecipients: Outlook2000.Recipients;
+begin
+   if AFromExplorer then
+   begin
+      FMail := AMail;
+   end;
+
+   if FMail <> nil then
+   begin
+//      OutputDebugString('2');
+{      if IMAil.Attachments.Count > 0 then
+      begin
+         OutputDebugString('3');
+         while IMail.Attachments.Count > 0 do
+            IMail.Attachments.Remove(1);
+      end; }
+//      OutputDebugString('4');
+      try
+         if (Assigned(dmSaveDoc) = False) then
+            dmSaveDoc := TdmSaveDoc.Create(nil);
+         if dmSaveDoc.orsInsight.Connected = False then dmSaveDoc.GetUserID;
+
+         ns := AddInModule.OutlookApp.GetNamespace('MAPI');
+
+         bUseSubject := (SystemString('USE_MAIL_SUBJECT_AS_NAME') = 'Y');
+         lDocID := dmSaveDoc.DocID;
+         lEmailFrom := FMail.SenderName;
+
+         if FMail.Recipients.Count > 0 then
+         begin
+            for lnRecipCount := 1 to FMail.Recipients.Count do
+            begin
+               if (lEmailTo <> '') then
+                  lEmailTo := lEmailTo +'; ';
+               lEmailTo := lEmailTo + FMail.Recipients.Item(lnRecipCount).Name;
+            end;
+         end;
+
+         lSubject := FMail.Subject;
+         for x := i + 1 to length(lSubject) do
+         begin
+            if (lSubject[x] in ['/', '\', '?','"','<','>','|','*',':', '.']) then
+               lSubject[x] := ' ';
+         end;
+
+         if (lDocID <= 0) and (ADocID = -1) then
+         begin
+            if (dmSaveDoc.qryMatterAttachments.Active = False)  then
+               dmSaveDoc.qryMatterAttachments.Open;
+            dmSaveDoc.qryMatterAttachments.insert;
+            dmSaveDoc.qryMatterAttachments.ParamByName('docid').AsInteger := dmSaveDoc.DocID;
+            lDocID := dmSaveDoc.DocID;
+         end
+         else
+            if (lDocID <= 0) then
+               lDocID := ADocID;
+
+         if EndsText('\',ATxtDocPath) then
+            ATxtDocPath := LeftStr(ATxtDocPath,length(ATxtDocPath)-1);
+
+         if (bUseSubject = True) then
+            MailName := IncludeTrailingPathDelimiter(ATxtDocPath) + lSubject + '_' + '[DOCSEQUENCE]' + '.msg'
+         else
+            MailName := IncludeTrailingPathDelimiter(ATxtDocPath) + IntToStr(lDocID) + '.msg';
+
+         LNMatter := TableInteger('MATTER','FILEID', AFileID,'NMATTER');
+         AParsedDocName := ParseMacros(MailName,LNMatter, lDocID, ADocName) ;
+
+         if not DirectoryExists(ExtractFileDir(AParsedDocName)) then
+            ForceDirectories(ExtractFileDir(AParsedDocName));
+
+         FMail.SaveAs(AParsedDocName ,olMSG);
+//         OutputDebugString('5');
+
+//         OutputDebugString('6');
+         try
+            if dmSaveDoc.qryMatterAttachments.Active = False then
+            begin
+               dmSaveDoc.orsInsight.StartTransaction;
+               dmSaveDoc.qryMatterAttachments.Open;
+            end;
+            if dmSaveDoc.qryMatterAttachments.State = dsBrowse then
+               dmSaveDoc.qryMatterAttachments.Edit;
+
+            AParentDocID := lDocID;
+
+            TableInteger('MATTER','FILEID',AFileID,'nMatter');
+
+            dmSaveDoc.qryMatterAttachments.FieldByName('docid').AsInteger := lDocID;
+            dmSaveDoc.qryMatterAttachments.FieldByName('fileid').AsString := AFileid;
+            dmSaveDoc.qryMatterAttachments.FieldByName('nmatter').AsInteger := TableInteger('MATTER','FILEID',AFileID,'nMatter');
+            dmSaveDoc.qryMatterAttachments.FieldByName('auth1').AsString := UpperCase(AAuthor);  //  dmSaveDoc.UserID;
+            if (FEditing = False) then
+               dmSaveDoc.qryMatterAttachments.FieldByName('D_CREATE').AsDateTime := AReceivedDate;
+
+            dmSaveDoc.qryMatterAttachments.FieldByName('IMAGEINDEX').AsInteger := 4;
+            dmSaveDoc.qryMatterAttachments.FieldByName('DOC_NAME').AsString := ExtractFileName(AParsedDocName);
+            dmSaveDoc.qryMatterAttachments.FieldByName('DESCR').AsString := ADocName;
+            dmSaveDoc.qryMatterAttachments.FieldByName('SEARCH').AsString := ADocName;
+            dmSaveDoc.qryMatterAttachments.FieldByName('FILE_EXTENSION').AsString := Copy(ExtractFileExt(AParsedDocName),2, Length(ExtractFileExt(AParsedDocName)));
+            dmSaveDoc.qryMatterAttachments.FieldByName('precedent_details').AsString := ADocName;
+            dmSaveDoc.qryMatterAttachments.FieldByName('KEYWORDS').AsString := AKeywords;
+            dmSaveDoc.qryMatterAttachments.FieldByName('EMAIL_FROM').AsString := lEmailFrom;
+            dmSaveDoc.qryMatterAttachments.FieldByName('EMAIL_SENT_TO').AsString := lEmailTo;
+
+            if (APrec_Category > -1) then
+               dmSaveDoc.qryMatterAttachments.FieldByName('NPRECCATEGORY').AsInteger := APrec_Category
+            else
+            begin
+               try
+                  dmSaveDoc.qryMatterAttachments.FieldByName('NPRECCATEGORY').AsInteger := SystemInteger('EMAIL_DFLT_CATEGORY');
+               except
+               //
+               end;
+            end;
+
+            if (APrec_Classification > -1) then
+               dmSaveDoc.qryMatterAttachments.FieldByName('NPRECCLASSIFICATION').AsInteger := APrec_Classification
+            else
+            begin
+               try
+                  dmSaveDoc.qryMatterAttachments.FieldByName('NPRECCLASSIFICATION').AsInteger := SystemInteger('EMAIL_DFLT_CLASSIFICATION');
+               except
+                 //
+               end;
+            end;
+//            if cbPortalAccess.Checked then
+//               dmSaveDoc.qryMatterAttachments.FieldByName('EXTERNAL_ACCESS').AsString := 'Y'
+//            else
+               dmSaveDoc.qryMatterAttachments.FieldByName('EXTERNAL_ACCESS').AsString := 'N';
+
+            if FEditing then
+            begin
+               dmSaveDoc.qryMatterAttachments.FieldByName('D_MODIF').AsDateTime := Now;
+               dmSaveDoc.qryMatterAttachments.FieldByName('auth2').AsString := dmSaveDoc.UserCode;
+            end;
+
+            if rgStorageItemIndex = 0 then
+            begin
+               TBlobField(dmSaveDoc.qryMatterAttachments.fieldByname('DOCUMENT')).LoadFromFile(tmpFileName);
+            end
+            else
+            begin
+               dmSaveDoc.qryMatterAttachments.FieldByName('PATH').AsString := IndexPath(AParsedDocName, 'DOC_SHARE_PATH');
+               dmSaveDoc.qryMatterAttachments.FieldByName('display_PATH').AsString := AParsedDocName;
+            end;
+
+            dmSaveDoc.qryMatterAttachments.Post;
+            dmSaveDoc.qryMatterAttachments.ApplyUpdates;
+
+            LregAxiom := TRegistry.Create;
+            try
+               LregAxiom.RootKey := HKEY_CURRENT_USER;
+               LregAxiom.OpenKey(csRegistryRoot, False);
+
+               {if (ASent = True) then
+               begin
+                  lParentFolder := ns.GetDefaultFolder(olFolderInbox).Parent as MAPIFolder;
+                  try
+                     lNewFolder := lParentFolder.Folders.Item('Sent from Insight') as MAPIFolder;
+                  except
+                     if (not assigned(lNewFolder)) then
+                        lNewFolder := lParentFolder.Folders.Add('Sent from Insight', olFolderInbox);
+                  end;
+               end
+               else
+               begin
+                  lParentFolder := ns.GetDefaultFolder(olFolderInbox).Parent as MAPIFolder;
+                  try
+                     lNewFolder := lParentFolder.Folders.Item('Saved In Insight') as MAPIFolder;
+                  except
+                     if (not assigned(lNewFolder)) then
+                        lNewFolder := lParentFolder.Folders.Add('Saved In Insight', olFolderInbox);
+                  end;
+               end; }
+            finally
+               if ((LregAxiom.ReadString('SaveOutgoingEmails') = 'Y') or
+                  (LregAxiom.ReadString('SaveIncomingEmails') = 'Y')) then
+               begin
+                  Randomize;
+                  RandFile := IntToStr(RandomRange(100, 10000));
+                  tmpFileName := IncludeTrailingPathDelimiter(dmSaveDoc.GetEnvVar('TMP')) + 'insighteml' + RandFile + '.msg';
+                  FMail.SaveAs(tmpFileName, olMSG);
+
+                  if (LregAxiom.ReadString('SaveOutgoingEmails') = 'Y') then
+                  begin
+                     AddInModule.ol2010.CopyFile(tmpFileName, 'Sent from Insight');
+                  end;
+
+                  if (LregAxiom.ReadString('SaveIncomingEmails') = 'Y') then
+                  begin
+                     AddInModule.ol2010.CopyFile(tmpFileName, 'Saved In Insight');
+                     if (LregAxiom.ReadString('RemoveSavedEmails') = 'Y') then
+                        FMail.Delete;
+                  end;
+
+//                  DeleteFile(tmpFileName);
+               end;
+
+//               if (not VarIsNull(lMailCopy))  then
+ //                 lMailCopy := varNull;
+{               if Assigned(lNewFolder) then
+                  lNewFolder := nil;
+               if Assigned(lParentFolder) then
+                  lParentFolder := nil;  }
+
+               LregAxiom.Free;
+            end;
+
+            if SystemString('EMAIL_SEPARATE_ATTACHMENTS') = 'Y' then
+            begin
+               lAttachments := FMail.Attachments;
+               for iCount := 1 to lAttachments.Count do
+               begin
+                  Attachment := lAttachments.Item(iCount);
+
+                  flags := lAttachments.Item(iCount).PropertyAccessor.GetProperty('http://schemas.microsoft.com/mapi/proptag/0x37140003');
+
+                  //To ignore embedded attachments -
+                  if (flags <> 4) then
+                  begin
+                     AType := lAttachments.Item(iCount).Type;
+                     if (AType <> 5) then
+                     begin
+                        DispName := Attachment.DisplayName;
+
+                        if DispName = '' then
+                           DispName := Attachment.FileName;
+
+                        if DispName = '' then
+                           DispName := 'Email Attachment';
+
+                        while Pos('/', DispName) > 0 do
+                           DispName[Pos('/', DispName)] := '.';
+
+                        while Pos('\', DispName) > 0 do
+                           DispName[Pos('\', DispName)] := '.';
+
+                        AExt := ExtractFileExt(DispName);
+                        ADispName := Copy (DispName,1, Length(DispName)- Length(AExt));
+                        ADispName := ADispName + '_' + '[DOCSEQUENCE]';
+                        DispName := ADispName + AExt;
+
+                        VarDocName := ATxtDocPath +'\'+ DispName;
+
+//                         VarDocName := AParsedDir + DispName;
+                        ParsedVarDocName := ParseMacros(VarDocName, TableInteger('MATTER','FILEID',AFileID,'NMATTER'), lDocID, DispName);
+                        Attachment.SaveAsFile(ParsedVarDocName);
+
+                        WriteFileDetailsToDB(AParentDocID, ParsedVarDocName, AFileID, ADocDescr);
+                     end;
+                  end;
+               end;
+            end;
+
+            if SaveTime then
+            begin
+               lTimeUnits := dmSaveDoc.SystemInteger('TIME_UNITS');
+               if ATask <> '' then
+                  lTask := ATask
+               else
+                  lTask := dmSaveDoc.SystemString('DFLT_EMAIL_TASK');
+
+               lRate := CalcRate(AAuthor, lTask, AReceivedDate, AFileID);
+               lAmount := ATimeUnits * lRate / (60 / lTimeUnits);
+               FeeTmpInsert(LNMatter, AAuthor, ATimeNarration, lAmount, lTask, ATimeUnits,
+                            (ATimeUnits*lTimeUnits), lRate, 'GST');
+            end;
+            dmSaveDoc.orsInsight.Commit;
+         except
+            dmSaveDoc.orsInsight.Rollback;
+         end;
+      finally
+         dmSaveDoc.orsInsight.Disconnect;
+         dmSaveDoc.Free;
+         dmSaveDoc := nil;
+      end;
+   end;
+end;
+
+function WriteFileDetailsToDB(AParentDocID: integer; ANewDocName, AFileID, ADocDescr: string; ADocID: integer = -1): boolean;
+var
+   FileExt: string;
+   FileImg: integer;
+begin
+   if dmSaveDoc.qrySaveEmailAttachments.State = dsInactive then
+   begin
+      if ADocID = -1 then
+         dmSaveDoc.qrySaveEmailAttachments.ParamByName('docid').AsString := dmSaveDoc.AttDocID
+      else
+         dmSaveDoc.qrySaveEmailAttachments.ParamByName('docid').AsInteger := ADocID;
+
+      dmSaveDoc.qrySaveEmailAttachments.Open;
+   end;
+
+   if dmSaveDoc.qrySaveEmailAttachments.State = dsBrowse then
+      dmSaveDoc.qrySaveEmailAttachments.Insert;
+
+   dmSaveDoc.qrySaveEmailAttachments.FieldByName('docid').AsString := dmSaveDoc.AttDocID;
+   dmSaveDoc.qrySaveEmailAttachments.FieldByName('fileid').AsString := AFileID;
+   dmSaveDoc.qrySaveEmailAttachments.FieldByName('nmatter').AsInteger := TableInteger('MATTER','FILEID',AFileID,'NMATTER');
+   dmSaveDoc.qrySaveEmailAttachments.FieldByName('auth1').AsString := UpperCase(dmSaveDoc.UserID);
+
+   dmSaveDoc.qrySaveEmailAttachments.FieldByName('DOC_NAME').AsString := ExtractFileName(ANewDocName);
+
+   dmSaveDoc.qrySaveEmailAttachments.FieldByName('DESCR').AsString := ADocDescr;
+   dmSaveDoc.qrySaveEmailAttachments.FieldByName('FILE_EXTENSION').AsString := Copy(ExtractFileExt(ANewDocName),2, length(ExtractFileExt(ANewDocName)));
+
+   dmSaveDoc.qrySaveEmailAttachments.FieldByName('PATH').AsString := IndexPath(ANewDocName, 'DOC_SHARE_PATH');
+   dmSaveDoc.qrySaveEmailAttachments.FieldByName('DISPLAY_PATH').AsString := ANewDocName;
+   dmSaveDoc.qrySaveEmailAttachments.FieldByName('PARENTDOCID').AsInteger := AParentDocID;
+   dmSaveDoc.qrySaveEmailAttachments.FieldByName('IS_ATTACHMENT').AsString := 'Y';
+
+   FileExt := uppercase(dmSaveDoc.qrySaveEmailAttachments.FieldByName('FILE_EXTENSION').AsString);
+   if (FileExt = 'DOC') or (FileExt = 'DOCX') then
+      FileImg := 2
+   else if (FileExt = 'XLS') or (FileExt = 'XLSX') then
+      FileImg := 3
+   else if (FileExt = 'PDF')  then
+      FileImg := 5
+   else if (FileExt = 'MSG') then
+      FileImg := 4
+   else
+      FileImg := 1;
+
+   try
+      dmSaveDoc.qrySaveEmailAttachments.FieldByName('D_CREATE').AsDateTime := FileDateToDateTime(FileAge(ANewDocName));
+   except
+    //
+   end;
+
+   dmSaveDoc.qrySaveEmailAttachments.FieldByName('IMAGEINDEX').AsInteger := FileImg;
+   dmSaveDoc.qrySaveEmailAttachments.FieldByName('precedent_details').AsString := 'Email attachment - ';
+   dmSaveDoc.qrySaveEmailAttachments.FieldByName('KEYWORDS').AsString := 'Email attachment - ';
+
+   dmSaveDoc.qrySaveEmailAttachments.Post;
+   dmSaveDoc.qrySaveEmailAttachments.ApplyUpdates;
+end;
+
+
+procedure SentMessage(AMail: Outlook2000.MailItem; ANewEmail: boolean = False);
+var
+   sSubject,
+   FileID: string;
+   x,
+   i: integer;
+   Prop: Outlook2000.UserProperty;
+   IDsp: IDispatch;
+   IMail: MailItem;
+   ReceivedDate: TDateTime;
+begin
+   try
+      sSubject := AMail.Subject;
+      if (pos('#', sSubject) > 0) then
+      begin
+         for i := 1 to length(sSubject) do
+         begin
+            if (sSubject[i] = '#') then
+            begin
+               for x := i + 1 to length(sSubject) do
+               begin
+                  if ((sSubject[x] <> ' ') and (sSubject[x] <> ']')) then
+                     FileID := FileID + sSubject[x]
+                  else
+                     break;
+               end;
+            end;
+            if (FileID <> '')  then
+               break;
+         end;
+
+         if Assigned(AMail) then
+         begin
+             if FileID <> '' then
+             begin
+                try
+                  Prop := AMail.UserProperties.Find('MATTER', True);
+                except
+                  begin
+                     if not Assigned(Prop) then
+                        Prop := AMail.UserProperties.Add('MATTER', olText, False, 1);
+                     if Assigned(Prop) then
+                     try
+                        Prop.Value := FileID;
+                        AMail.Save;
+                     finally
+                        Prop := nil;
+                     end;
+                  end;
+                end;
+
+                if Prop = nil then
+                begin
+                   Prop := AMail.UserProperties.Add('MATTER', olText, False, 1);
+                     if Assigned(Prop) then
+                     try
+                        Prop.Value := FileID;
+                        AMail.Save;
+                     finally
+                        Prop := nil;
+                     end;
+                end;
+             end;
+
+//            prop := 'http://schemas.microsoft.com/mapi/string/{00020329-0000-0000-C000-000000000046}/Matter';
+//            OleVariant(OutlookApp.ActiveInspector.CurrentItem).PropertyAccessor.SetProperty(prop,FileID);
+            if AMail.Sent = False then
+               Sleep(200);
+            AMail.Save;
+         end;
+         InboxMessage(AMail, FileID);
+      end
+      else
+      begin
+         if ANewEmail = True then
+         begin
+            try
+               ReceivedDate := AMail.ReceivedTime;
+               frmSaveDocDetails := TfrmSaveDocDetails.Create(nil);
+               frmSaveDocDetails.AppType := 3;  //Outlook
+
+               frmSaveDocDetails.btnClose.Caption := 'Don''t save';
+               frmSaveDocDetails.MailSubject := sSubject;
+               frmSaveDocDetails.ReceivedDate := ReceivedDate;
+               frmSaveDocDetails.TimeNarration := DateTimeToStr(ReceivedDate) + ' ' + sSubject;
+//               SetOutlookApp(OutlookApp);
+
+//               frmSaveDocDetails.LadxLCID := adxLCID;
+               frmSaveDocDetails.IMail := AMail;
+               frmSaveDocDetails.SentEmail := ANewEmail;
+
+               frmSaveDocDetails.ShowModal;
+            finally
+              frmSaveDocDetails := nil;
+              AMail := nil;
+            end;
+         end;
+      end;
+   except
+   //
+   end;
+end;
+
+procedure InboxMessage(AMail: Outlook2000.MailItem; AFileID: string {; OutlookApp: TOutlookApplication});
+var
+   sSubject,
+   FileID,
+   DocSequence,
+   DfltDir: string;
+   x,
+   i: integer;
+   prop: Outlook2000.UserProperty;
+   bSaveTime: boolean;
+   dmSaveDoc: TdmSaveDoc;
+begin
+   prop := nil;
+   FileID := AFileID;
+   sSubject := AMail.Subject;
+   if Assigned(AMail) then
+   begin
+      try
+         prop := AMail.UserProperties.Find('MATTER', False);
+         if Assigned(prop) then
+            FileId := prop.Value;
+      except
+//         on E: EExternalModuleException do
+      end;
+   end;
+   if (FileID = '') then
+   begin
+      sSubject := AMail.Subject;
+      if (Pos('#',sSubject) > 0) then
+      begin
+         for i := 1 to length(sSubject) do
+         begin
+            if sSubject[i] = '#' then
+            begin
+               for x := i + 1 to length(sSubject) do
+               begin
+                  if (sSubject[x] = ' ') then
+                     break;
+                  if ((sSubject[x] <> ' ') and (sSubject[x] <> '[')
+                     and (sSubject[x] <> ']')) then
+                     FileID := FileID + sSubject[x]
+                  else
+                     break;
+               end;
+            end;
+            if (FileID <> '') then
+               break;
+         end;
+      end;
+   end;
+
+   try
+      if (not Assigned(dmSaveDoc)) then
+         dmSaveDoc := TdmSaveDoc.Create(nil);
+      if dmSaveDoc.orsInsight.Connected = False then dmSaveDoc.GetUserID;
+
+      if ((FileID <> '') and (MatterExists(FileID) = true)) then
+      begin
+         try
+            if dmSaveDoc.orsInsight.Connected = False then dmSaveDoc.GetUserID;
+            with dmSaveDoc.qryCheckEmail do
+            begin
+               Close;
+               ParamByName('descr').AsString := sSubject;
+               ParamByName('D_CREATE').AsDateTime := AMail.ReceivedTime;
+               ParamByName('fileid').AsString := FileID;
+               Open;
+               if (FieldByName('rec_found').IsNull = True) then
+               begin
+                  FMail := AMail;
+                  DfltDir := SystemString('DRAG_DEFAULT_DIRECTORY');
+                  bSaveTime := (SystemString('CREATE_TIME_FROM_EMAIL') = 'Y');
+                  SaveOutlookMessage(DocSequence, 1, DfltDir,
+                                     True, True,
+                                     FileID, dmSaveDoc.UserCode,
+                                     AMail.Subject,SystemInteger('EMAIL_DFLT_CATEGORY'),
+                                     SystemInteger('EMAIL_DFLT_CLASSIFICATION'), '',
+                                     AMail.ReceivedTime, AMail, False, -1, bSaveTime);
+               end;
+            end;
+         finally
+            dmSaveDoc.qryCheckEmail.Close;
+         end;
+      end;
+   finally
+ //     dmSaveDoc.orsInsight.Disconnect;
+//      dmSaveDoc.Free;
+//      dmSaveDoc := nil;
+   end;
+end;
+
+procedure SetOutlookApp(OutlookApp: TOutlookApplication);
+begin
+//    AMSOutlook := OutlookApp;
+end;
+
+{function UpdateAmount(AUnits: integer): currency;
+var
+   bError:  boolean;
+   sTemplate: string;
+   nAmount: Currency;
+begin
+   sTemplate := SystemString('DFLT_EMAIL_TASK');
+   if (SystemInteger('TIME_UNITS') > 0) then
+   begin
+      if (TableCurrency('SCALECOST','CODE',string(sTemplate), 'RATE') = 0) then
+      begin
+         try
+            nAmount := AUnits * nRate / 60;
+         except
+            nAmount := 0.00;
+         end;
+      end
+//      CalcTax;
+   end
+   else
+   begin
+      if bError = false then
+      begin
+         bError := true;
+         MessageDlg('System Time Units not set in Systemfile', mtError, [mbOK], 0);
+      end;
+   end;
+end;
+
+function CalcRate(ATemplate: string): currency;
+begin
+   if ((TableCurrency('SCALECOST','CODE',string(ATemplate),'AMOUNT') <> 0) and
+      (TableString('SCALECOST','CODE',string(ATemplate),'ZERO_FEE') = 'N')) then
+      Result := FeeRate('', cmbMatterFind.EditText, cbAuthor.EditValue, dtpCreated.Date);
+end;   }
+
+
+end.

@@ -1,0 +1,236 @@
+object frmLoginSetup: TfrmLoginSetup
+  Left = 430
+  Top = 340
+  BorderStyle = bsDialog
+  Caption = 'Configuration'
+  ClientHeight = 456
+  ClientWidth = 233
+  Color = clBtnFace
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'MS Sans Serif'
+  Font.Style = []
+  KeyPreview = True
+  OldCreateOrder = False
+  Position = poOwnerFormCenter
+  OnShow = FormShow
+  DesignSize = (
+    233
+    456)
+  PixelsPerInch = 96
+  TextHeight = 13
+  object GroupBox1: TGroupBox
+    Left = 7
+    Top = 8
+    Width = 219
+    Height = 198
+    Caption = 'Login Details'
+    TabOrder = 0
+    object Label1: TLabel
+      Left = 17
+      Top = 139
+      Width = 48
+      Height = 13
+      Caption = 'Username'
+    end
+    object Label2: TLabel
+      Left = 17
+      Top = 167
+      Width = 46
+      Height = 13
+      Caption = 'Password'
+    end
+    object edUserName: TEdit
+      Left = 79
+      Top = 135
+      Width = 121
+      Height = 21
+      AutoSize = False
+      TabOrder = 1
+    end
+    object edPassword: TEdit
+      Left = 79
+      Top = 163
+      Width = 121
+      Height = 21
+      AutoSize = False
+      PasswordChar = '*'
+      TabOrder = 2
+    end
+    object Database: TGroupBox
+      Left = 6
+      Top = 22
+      Width = 207
+      Height = 105
+      Caption = 'Database Details'
+      TabOrder = 0
+      object Label3: TLabel
+        Left = 5
+        Top = 26
+        Width = 31
+        Height = 13
+        Caption = 'Server'
+      end
+      object Label4: TLabel
+        Left = 5
+        Top = 54
+        Width = 46
+        Height = 13
+        Caption = 'Database'
+      end
+      object Label5: TLabel
+        Left = 5
+        Top = 81
+        Width = 19
+        Height = 13
+        Caption = 'Port'
+      end
+      object edServerName: TEdit
+        Left = 55
+        Top = 22
+        Width = 146
+        Height = 21
+        AutoSize = False
+        TabOrder = 0
+      end
+      object edDatabase: TEdit
+        Left = 55
+        Top = 50
+        Width = 121
+        Height = 21
+        TabOrder = 1
+        Text = 'Insight'
+      end
+      object edPort: TEdit
+        Left = 55
+        Top = 77
+        Width = 57
+        Height = 21
+        TabOrder = 2
+        Text = '1521'
+      end
+    end
+  end
+  object Button1: TButton
+    Left = 151
+    Top = 409
+    Width = 75
+    Height = 25
+    Anchors = [akRight, akBottom]
+    Caption = 'Save'
+    ModalResult = 1
+    TabOrder = 1
+    OnClick = Button1Click
+  end
+  object GroupBox2: TGroupBox
+    Left = 7
+    Top = 212
+    Width = 219
+    Height = 193
+    Caption = 'Outlook Options'
+    TabOrder = 2
+    object chkShowMatterList: TCheckBox
+      Left = 7
+      Top = 18
+      Width = 97
+      Height = 17
+      Caption = 'Show Matter List'
+      TabOrder = 0
+      OnClick = chkShowMatterListClick
+    end
+    object chkSaveIncoming: TCheckBox
+      Left = 7
+      Top = 38
+      Width = 208
+      Height = 17
+      Caption = 'Save Incoming Emails in separate folder'
+      TabOrder = 1
+      OnClick = chkSaveIncomingClick
+    end
+    object chkSaveOutgoing: TCheckBox
+      Left = 7
+      Top = 78
+      Width = 189
+      Height = 17
+      Caption = 'Save Sent Emails in separate folder'
+      TabOrder = 2
+      OnClick = chkSaveOutgoingClick
+    end
+    object chkSaveSentEmail: TCheckBox
+      Left = 7
+      Top = 100
+      Width = 189
+      Height = 17
+      Hint = 
+        'Select this option if you want a prompt to appear to save Sent e' +
+        'mail.'
+      Caption = 'Prompt to save Sent Email'
+      TabOrder = 3
+      OnClick = chkSaveSentEmailClick
+    end
+    object chkRemoveEmail: TCheckBox
+      Left = 19
+      Top = 58
+      Width = 199
+      Height = 17
+      Caption = 'Remove Email from Inbox once saved'
+      TabOrder = 4
+      OnClick = chkRemoveEmailClick
+    end
+  end
+  object btnCancel: TButton
+    Left = 70
+    Top = 409
+    Width = 75
+    Height = 25
+    Anchors = [akRight, akBottom]
+    Caption = 'Cancel'
+    ModalResult = 2
+    TabOrder = 3
+    OnClick = Button1Click
+  end
+  object GroupBox3: TGroupBox
+    Left = 11
+    Top = 333
+    Width = 209
+    Height = 67
+    TabOrder = 4
+    object chkLogEvents: TCheckBox
+      Left = 3
+      Top = 4
+      Width = 203
+      Height = 30
+      Hint = 
+        'Select this option if you want a prompt to appear to save Sent e' +
+        'mail.'
+      Caption = 'Log Outlook events (set only if asked by BHL representative)'
+      Enabled = False
+      TabOrder = 0
+      WordWrap = True
+      OnClick = chkLogEventsClick
+    end
+    object edLogPath: TEdit
+      Left = 3
+      Top = 40
+      Width = 200
+      Height = 21
+      TabOrder = 1
+      OnExit = edLogPathExit
+    end
+  end
+  object StatusBar: TStatusBar
+    Left = 0
+    Top = 437
+    Width = 233
+    Height = 19
+    Panels = <
+      item
+        Width = 340
+      end>
+    ParentFont = True
+    UseSystemFont = False
+    ExplicitLeft = -128
+    ExplicitWidth = 361
+  end
+end

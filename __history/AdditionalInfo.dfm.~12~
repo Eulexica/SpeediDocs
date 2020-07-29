@@ -1,0 +1,57 @@
+object frmAdditionalInfo: TfrmAdditionalInfo
+  Left = 0
+  Top = 0
+  BorderStyle = bsDialog
+  Caption = 'Additional Info'
+  ClientHeight = 263
+  ClientWidth = 547
+  Color = clBtnFace
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'Segoe UI'
+  Font.Style = []
+  OldCreateOrder = False
+  Position = poOwnerFormCenter
+  OnShow = FormShow
+  DesignSize = (
+    547
+    263)
+  PixelsPerInch = 96
+  TextHeight = 13
+  object BitBtn1: TBitBtn
+    Left = 462
+    Top = 231
+    Width = 75
+    Height = 25
+    Anchors = [akRight, akBottom]
+    Caption = 'Close'
+    TabOrder = 0
+    OnClick = BitBtn1Click
+  end
+  object Memo1: TMemo
+    Left = 8
+    Top = 8
+    Width = 418
+    Height = 42
+    TabOrder = 1
+  end
+  object txtRegResiliency: TStaticText
+    Left = 8
+    Top = 71
+    Width = 87
+    Height = 17
+    Caption = 'txtRegResiliency'
+    TabOrder = 2
+  end
+  object btnResilience: TButton
+    Left = 440
+    Top = 64
+    Width = 75
+    Height = 24
+    Caption = 'Add Key'
+    TabOrder = 3
+    Visible = False
+    OnClick = btnResilienceClick
+  end
+end

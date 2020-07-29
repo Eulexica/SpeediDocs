@@ -1,0 +1,43 @@
+library SpeediDocs;
+
+
+
+uses
+  EMemLeaks,
+  EResLeaks,
+  EDebugExports,
+  EDebugJCL,
+  EFixSafeCallException,
+  EMapWin32,
+  ExceptionLog7,
+  ComServ,
+  SpeediDocs_TLB in 'SpeediDocs_TLB.pas',
+  SpeediDocs_IMPL in 'SpeediDocs_IMPL.pas' {AddInModule: TAddInModule} {coSpeediDocs: CoClass},
+  LoginDetails in 'LoginDetails.pas' {frmLoginSetup},
+  MatterSearch in 'MatterSearch.pas' {frmMtrSearch},
+  OutlookUnit in 'OutlookUnit.pas',
+  SaveDocFunc in 'SaveDocFunc.pas',
+  PowerPointUnit in 'PowerPointUnit.pas',
+  SaveprecDetails in 'SaveprecDetails.pas' {frmSavePrecDetails},
+  ExcelUnit in 'ExcelUnit.pas',
+  WordUnit in 'WordUnit.pas',
+  NewFee in 'NewFee.pas' {frmNewFee},
+  SaveDoc in 'SaveDoc.pas' {dmSaveDoc: TDataModule},
+  SavedocDetails in 'SavedocDetails.pas' {frmSaveDocDetails},
+  FieldList in 'FieldList.pas' {frmFieldList},
+  Matters in 'Matters.pas' {adxfrmMatters: TadxOlForm},
+  DocList in 'DocList.pas' {frmDocList},
+  AdditionalInfo in 'AdditionalInfo.pas' {frmAdditionalInfo};
+
+exports
+  DllGetClassObject,
+  DllCanUnloadNow,
+  DllRegisterServer,
+  DllUnregisterServer;
+
+{$R *.TLB}
+
+{$R *.RES}
+
+begin
+end.
