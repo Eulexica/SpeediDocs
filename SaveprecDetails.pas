@@ -11,7 +11,8 @@ uses
   cxContainer, cxEdit, cxTextEdit, cxMaskEdit, cxDropDownEdit, cxLookupEdit,
   cxDBLookupEdit, cxDBLookupComboBox, Outlook2000, cxImageComboBox, DBAccess,
   Ora, MemDS, JvBaseDlg, JvBrowseFolder, cxButtonEdit, dxLayoutControlAdapters,
-  dxLayoutContainer, dxLayoutcxEditAdapters, cxClasses, dxLayoutControl;
+  dxLayoutContainer, dxLayoutcxEditAdapters, cxClasses, dxLayoutControl,
+  System.ImageList;
 
 const
      CUSTOMPROPS: array[0..10] of string = ('MatterNo','DocID','Prec_Category','Prec_Classification','Doc_Keywords','Doc_Precedent','Doc_FileName','Doc_Author','Saved_in_DB', 'Doc_Title','Portal_Access');

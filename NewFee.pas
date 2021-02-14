@@ -180,6 +180,11 @@ begin
       cbTaxTypeChange(Self);
       mmoDesc.Text := sSubject;
       neUnits.Text := nUnits;
+      if length(neUnits.Text) = 0 then
+      begin
+         neUnits.Text   := '1';
+         nUnits         := '1';
+      end;
    except
 //      Application.MessageBox('Could not connect to Insight database6','Insight');
 //      ModalResult := mrCancel;
@@ -304,65 +309,68 @@ procedure TfrmNewFee.UpdateAmount;
 var
    bError:  boolean;
 begin
-   if (SystemInteger('TIME_UNITS') > 0) then
+   if length(neUnits.Text) > 0 then
    begin
-      if ((lblUnits.Caption = 'Units') or (cmbTemplate.Text = '') or
-         (TableCurrency('SCALECOST','CODE',string(cmbTemplate.LookupValue), 'RATE') = 0)) then
+      if (SystemInteger('TIME_UNITS') > 0) then
       begin
-         try
-            neAmount.Value := StrToInt(neUnits.Text) * neRate.Value / (60 / SystemInteger('TIME_UNITS'));
-         except
-            neAmount.Value := 0.00;
+         if ((lblUnits.Caption = 'Units') or (cmbTemplate.Text = '') or
+            (TableCurrency('SCALECOST','CODE',string(cmbTemplate.LookupValue), 'RATE') = 0)) then
+         begin
+            try
+               neAmount.Value := StrToInt(neUnits.Text) * neRate.Value / (60 / SystemInteger('TIME_UNITS'));
+            except
+               neAmount.Value := 0.00;
+            end;
+            try
+               neMinutes.Text := IntToStr(StrToInt(neUnits.Text) * SystemInteger('TIME_UNITS'));
+            except
+               neMinutes.Text := '0';
+            end;
+         end
+         else if (lblUnits.Caption = 'Mins') or (cmbTemplate.Text = '') or
+                 (TableCurrency('SCALECOST','CODE',string(cmbTemplate.LookupValue), 'RATE') = 0) then
+         begin
+            try
+               neAmount.Value := StrToInt(neUnits.Text) * neRate.Value / 60;
+            except
+               neAmount.Value := 0.00;
+            end;
+            try
+               neMinutes.Text := neUnits.Text;
+            except
+               neMinutes.Text := '0';
+            end;
+         end
+         else if (lblUnits.Caption = 'Item') and (string(cmbTemplate.LookupValue) <> '') then
+         begin
+            try
+               neAmount.Value := StrToInt(dfItems.Text) * neRate.Value;
+            except
+               neAmount.Value := 0.00;
+            end;
+            try
+               neMinutes.Text := IntToStr(StrToInt(neUnits.Text) * SystemInteger('TIME_UNITS'));
+            except
+               neMinutes.Text := '0';
+            end;
+         end
+         else
+         begin
+            try
+               neAmount.Value := StrToInt(neUnits.Text) * neRate.Value;
+            except
+               neAmount.Value := 0.00;
+            end;
          end;
-         try
-            neMinutes.Text := IntToStr(StrToInt(neUnits.Text) * SystemInteger('TIME_UNITS'));
-         except
-            neMinutes.Text := '0';
-         end;
-      end
-      else if (lblUnits.Caption = 'Mins') or (cmbTemplate.Text = '') or
-              (TableCurrency('SCALECOST','CODE',string(cmbTemplate.LookupValue), 'RATE') = 0) then
-      begin
-         try
-            neAmount.Value := StrToInt(neUnits.Text) * neRate.Value / 60;
-         except
-            neAmount.Value := 0.00;
-         end;
-         try
-            neMinutes.Text := neUnits.Text;
-         except
-            neMinutes.Text := '0';
-         end;
-      end
-      else if (lblUnits.Caption = 'Item') and (string(cmbTemplate.LookupValue) <> '') then
-      begin
-         try
-            neAmount.Value := StrToInt(dfItems.Text) * neRate.Value;
-         except
-            neAmount.Value := 0.00;
-         end;
-         try
-            neMinutes.Text := IntToStr(StrToInt(neUnits.Text) * SystemInteger('TIME_UNITS'));
-         except
-            neMinutes.Text := '0';
-         end;
+         CalcTax;
       end
       else
       begin
-         try
-            neAmount.Value := StrToInt(neUnits.Text) * neRate.Value;
-         except
-            neAmount.Value := 0.00;
+         if bError = false then
+         begin
+            bError := true;
+            MessageDlg('System Time Units not set in Systemfile', mtError, [mbOK], 0);
          end;
-      end;
-      CalcTax;
-   end
-   else
-   begin
-      if bError = false then
-      begin
-         bError := true;
-         MessageDlg('System Time Units not set in Systemfile', mtError, [mbOK], 0);
       end;
    end;
 end;
@@ -419,6 +427,8 @@ end;
 
 procedure TfrmNewFee.btnEditMatterPropertiesButtonClick(Sender: TObject;
   AButtonIndex: Integer);
+var
+   frmMtrSearch:  TfrmMtrSearch;
 begin
    frmMtrSearch :=TfrmMtrSearch.Create(nil);
    try

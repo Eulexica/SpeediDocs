@@ -36,7 +36,6 @@ type
     RibbonTabSpeediDocs: TadxRibbonTab;
     adxContextMenuExplorer: TadxContextMenu;
     ilstToolbar: TImageList;
-    adxRibbonTabReadEmail: TadxRibbonTab;
     adxRibbonTabWord: TadxRibbonTab;
     adxRibbonContextMenuAppt: TadxRibbonContextMenu;
     procedure RibbonTabSpeediDocsControls0Controls0Click(Sender: TObject;
@@ -361,10 +360,10 @@ var
    StoreId: olevariant;
    i: integer;
 begin   // create new fee
-   if Assigned(fmNewFee) then
+{   if Assigned(fmNewFee) then
    begin
       FreeAndNil(fmNewFee);
-   end;
+   end; }
 
    ns := nil;
    try
@@ -380,6 +379,7 @@ begin   // create new fee
    finally
       FreeAndNil(ns);
       FreeAndNil(entryIds);
+      FreeAndNil(fmNewFee);
    end;
 end;
 
@@ -548,68 +548,6 @@ begin
                      IProps := nil;
                  end;
                end;
-         ohaOutlook:
-            begin
-               LAppType := 3;
-               try
-                  sel := OutlookApp.ActiveExplorer.Selection;
-               except
-               //
-               end;
-
-               if (sel <> nil) then
-               begin
-                  for I := 1 to OutlookApp.ActiveExplorer.Selection.Count do
-                  begin
-                     item := sel.Item(I);
-                     item.QueryInterface(IID__MailItem, LIMail);
-                     if LIMail <> nil then
-                     begin
-                        lSubject := LIMail.Subject;
-                        ReceivedDate := LIMail.ReceivedTime;
-                     end
-                     else
-                     begin
-                        Exit;
-{                        item.QueryInterface(IID__AppointmentItem, IAppointment);
-                        if IAppointment <> nil then
-                           Exit;
-
-                        item.QueryInterface(IID__ContactItem, IContact);
-                        if IContact <> nil then
-                           lSubject := IContact.FullName;}
-                     end;
-
-{                     if (not Assigned(dmSaveDoc)) then
-                         dmSaveDoc := TdmSaveDoc.Create(Application);
-}
-                     try
-                        FreeAndNil(fmSaveDocDetails);
-                        fmSaveDocDetails := TfrmSaveDocDetails.Create(nil);
-                        fmSaveDocDetails.AppType := LAppType;
-
-                        fmSaveDocDetails.MailSubject := lSubject;
-                        fmSaveDocDetails.ReceivedDate := ReceivedDate;
-                        fmSaveDocDetails.TimeNarration := DateTimeToStr(ReceivedDate) + ' ' + lSubject;
-//                        SetOutlookApp(OutlookApp);
-
-                        fmSaveDocDetails.LadxLCID := adxLCID;
-                        fmSaveDocDetails.IMail := LIMail;
-
-                        fmSaveDocDetails.ShowModal;
-                     finally
-                        FreeAndNil(fmSaveDocDetails);
-
-                        LIMail := nil;
-{                        if (Assigned(dmSaveDoc)) then
-                        begin
-                           dmSaveDoc.Free;
-                           dmSaveDoc := nil;
-                        end;}
-                     end;
-                  end;
-               end;
-            end;
          ohaPowerPoint:
             begin
                PowerPointApp.ActivePresentation.CustomDocumentProperties.QueryInterface(IID_DocumentProperties, IProps);
@@ -634,10 +572,9 @@ begin
                end;
             end;
       end;
-
       if (LAppType <> 3) then
       begin
-         if (Not assigned(fmSaveDocDetails)) then
+//         if (Not assigned(fmSaveDocDetails)) then
             fmSaveDocDetails := TfrmSaveDocDetails.Create(self);
 
          fmSaveDocDetails.AppType := LAppType;
@@ -704,15 +641,14 @@ var
 begin
    try
       try
-         if Assigned(frmLoginSetup) then
-            frmLoginSetup := nil;
+//         if Assigned(frmLoginSetup) then
+//            frmLoginSetup := nil;
          frmLoginSetup := TfrmLoginSetup.Create(nil);
          if HostType = ohaOutlook then
             frmLoginSetup.IsOutlook := True;
          bLoginSetup := frmLoginSetup.ShowModal;
       finally
-         frmLoginSetup.Free;
-         frmLoginSetup := nil;
+         FreeAndNil(frmLoginSetup);
          if Assigned(dmConnection) then
          begin
             if dmConnection.orsInsight.Connected = True then
@@ -732,16 +668,16 @@ procedure TAddInModule.RibbonTabSpeediDocsControls1Controls1Click(
 var
    fmNewFee: TfrmNewFee;
 begin   // new bhl fee entry
-   if Assigned(fmNewFee) then
+{   if Assigned(fmNewFee) then
    begin
       fmNewFee := nil;
-   end;
+   end;   }
 
    fmNewFee := TfrmNewFee.Create(nil);
    try
       fmNewFee.ShowModal;
    finally
-      fmNewFee.Free;
+      FreeAndNil(fmNewFee);
    end;
 end;
 
@@ -756,17 +692,17 @@ procedure TAddInModule.RibbonTabSpeediDocsControls1Controls3Click(
 var
    fmFieldList: TfrmFieldList;
 begin  // list speedidocs bhl merge fields
-   if Assigned(fmFieldList) then
+{   if Assigned(fmFieldList) then
    begin
       fmFieldList := nil;
-   end;
+   end;         }
 
    fmFieldList := TfrmFieldList.Create(nil);
    try
       fmFieldList.SetWordApp(WordApp);
       fmFieldList.Show;
    finally
-       //
+//      FreeAndNil(fmFieldList);
    end;
 end;
 
@@ -1010,6 +946,7 @@ var
    lSubject: string;
    ReceivedDate: TDateTime;
    WordProps: array[1..11] of TWordProperties;
+   frmSaveprecDetails: TfrmSaveprecDetails;
 begin
    case HostType of
       ohaExcel:

@@ -426,7 +426,7 @@ var
    frmMtrSearch: TfrmMtrSearch;
 begin
    try
-      FreeAndNil(frmMtrSearch);
+ //     FreeAndNil(frmMtrSearch);
       frmMtrSearch := TfrmMtrSearch.Create(Application);
       if (frmMtrSearch.ShowModal = mrOK) then
       begin

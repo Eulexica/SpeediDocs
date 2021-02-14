@@ -10,7 +10,7 @@ uses
   cxGridLevel, cxClasses, cxGridCustomView, cxGridCustomTableView,
   cxGridTableView, cxGridDBTableView, cxGrid, Ora, MemDS, OraSmart, Vcl.ExtCtrls,
   Word2000, cxDataControllerConditionalFormattingRulesManagerDialog, Vcl.Menus,
-  Vcl.StdCtrls, cxButtons, savedoc;
+  Vcl.StdCtrls, cxButtons, savedoc, dxDateRanges, dxScrollbarAnnotations;
 
 type
   TfrmFieldList = class(TForm)

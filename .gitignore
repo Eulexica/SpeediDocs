@@ -21,3 +21,9 @@ $RECYCLE.BIN/
 # =========================
 # Operating System Files
 # =========================
+*.dcu
+Win64/SpeediDocs.dll
+_Setup/SpeediDocs.exe
+Win64/output/SpeediDocs.dll
+_Setup/SpeediDocs.exe
+_Setup/SpeediDocs.exe

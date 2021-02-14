@@ -2,11 +2,10 @@ object frmSavePrecDetails: TfrmSavePrecDetails
   Left = 529
   Top = 265
   AlphaBlendValue = 245
-  AutoSize = True
   BorderStyle = bsDialog
   Caption = 'SpeediDocs Precedent Save'
-  ClientHeight = 418
-  ClientWidth = 394
+  ClientHeight = 462
+  ClientWidth = 397
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -60,7 +59,7 @@ object frmSavePrecDetails: TfrmSavePrecDetails
     Left = 7
     Top = 0
     Width = 387
-    Height = 398
+    Height = 441
     TabOrder = 0
     AutoSize = True
     object btnSave: TBitBtn
@@ -437,7 +436,7 @@ object frmSavePrecDetails: TfrmSavePrecDetails
       Control = cmbPrecCategory
       ControlOptions.MinHeight = 19
       ControlOptions.MinWidth = 19
-      ControlOptions.OriginalHeight = 21
+      ControlOptions.OriginalHeight = 23
       ControlOptions.OriginalWidth = 242
       Index = 2
     end
@@ -448,7 +447,7 @@ object frmSavePrecDetails: TfrmSavePrecDetails
       Control = cmbClassification
       ControlOptions.MinHeight = 19
       ControlOptions.MinWidth = 19
-      ControlOptions.OriginalHeight = 21
+      ControlOptions.OriginalHeight = 23
       ControlOptions.OriginalWidth = 242
       Index = 3
     end
@@ -459,7 +458,7 @@ object frmSavePrecDetails: TfrmSavePrecDetails
       Control = dblGroup
       ControlOptions.MinHeight = 19
       ControlOptions.MinWidth = 19
-      ControlOptions.OriginalHeight = 21
+      ControlOptions.OriginalHeight = 23
       ControlOptions.OriginalWidth = 242
       Index = 5
     end
@@ -493,7 +492,7 @@ object frmSavePrecDetails: TfrmSavePrecDetails
       Control = cmbAuthor
       ControlOptions.MinHeight = 19
       ControlOptions.MinWidth = 19
-      ControlOptions.OriginalHeight = 21
+      ControlOptions.OriginalHeight = 23
       ControlOptions.OriginalWidth = 242
       Index = 8
     end
@@ -519,7 +518,7 @@ object frmSavePrecDetails: TfrmSavePrecDetails
       Control = btnTxtDocPath
       ControlOptions.MinHeight = 19
       ControlOptions.MinWidth = 19
-      ControlOptions.OriginalHeight = 21
+      ControlOptions.OriginalHeight = 24
       ControlOptions.OriginalWidth = 345
       ControlOptions.ShowBorder = False
       Index = 10
@@ -562,7 +561,7 @@ object frmSavePrecDetails: TfrmSavePrecDetails
       Parent = dxLayoutGroup4
       CaptionOptions.Text = 'Template Type'
       Control = cmbTemplateType
-      ControlOptions.OriginalHeight = 21
+      ControlOptions.OriginalHeight = 23
       ControlOptions.OriginalWidth = 121
       ControlOptions.ShowBorder = False
       Index = 0
@@ -571,7 +570,7 @@ object frmSavePrecDetails: TfrmSavePrecDetails
       Parent = dxLayoutGroup4
       CaptionOptions.Text = 'Workflow Type'
       Control = cmbWorkflowType
-      ControlOptions.OriginalHeight = 21
+      ControlOptions.OriginalHeight = 23
       ControlOptions.OriginalWidth = 145
       ControlOptions.ShowBorder = False
       Index = 4
@@ -579,13 +578,15 @@ object frmSavePrecDetails: TfrmSavePrecDetails
   end
   object StatusBar: TStatusBar
     Left = 0
-    Top = 399
-    Width = 394
+    Top = 443
+    Width = 397
     Height = 19
     Panels = <
       item
         Width = 340
       end>
+    ExplicitTop = 399
+    ExplicitWidth = 394
   end
   object ImageList1: TImageList
     Left = 187

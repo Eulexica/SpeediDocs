@@ -19,10 +19,10 @@ object frmNewFee: TfrmNewFee
   PixelsPerInch = 96
   TextHeight = 15
   object lblMatterDesc: TLabel
-    Left = 180
-    Top = 11
-    Width = 153
-    Height = 33
+    Left = 199
+    Top = 10
+    Width = 134
+    Height = 34
     AutoSize = False
     WordWrap = True
   end
@@ -57,7 +57,7 @@ object frmNewFee: TfrmNewFee
   object Label6: TLabel
     Left = 19
     Top = 126
-    Width = 52
+    Width = 51
     Height = 15
     Caption = 'Template:'
   end
@@ -134,7 +134,7 @@ object frmNewFee: TfrmNewFee
     Left = 47
     Top = 223
     Width = 24
-    Height = 25
+    Height = 23
     TabOrder = 4
     Text = '0'
     Visible = False
@@ -143,7 +143,7 @@ object frmNewFee: TfrmNewFee
     Left = 76
     Top = 249
     Width = 29
-    Height = 25
+    Height = 23
     Alignment = taRightJustify
     TabOrder = 5
     Text = '1'
@@ -177,8 +177,8 @@ object frmNewFee: TfrmNewFee
     Top = 70
     Width = 99
     Height = 23
-    Date = 40764.667509444440000000
-    Time = 40764.667509444440000000
+    Date = 40764.000000000000000000
+    Time = 0.667509444443567200
     TabOrder = 0
   end
   object neRate: TJvCalcEdit
@@ -327,8 +327,8 @@ object frmNewFee: TfrmNewFee
       'SELECT '#39'Search...'#39','#39#39','#39#39',999'
       'FROM dual'
       'ORDER BY 3')
-    Left = 187
-    Top = 34
+    Left = 243
+    Top = 66
     ParamData = <
       item
         DataType = ftUnknown
@@ -343,8 +343,8 @@ object frmNewFee: TfrmNewFee
   end
   object dsMRUList: TOraDataSource
     DataSet = qryMRUList
-    Left = 326
-    Top = 6
+    Left = 22
+    Top = 38
   end
   object dsFeeEarners: TOraDataSource
     DataSet = qFeeEarners
