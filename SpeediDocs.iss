@@ -1,5 +1,5 @@
 #define AppName "{EF42EFD2-D726-4E16-8C71-B8E55704160F}"
-#define AppVersion "1.1.0.92"
+#define AppVersion "1.1.0.93"
 
 
 
@@ -7,7 +7,7 @@
 AppName                = SpeediDocs
 AppVerName             = SpeediDocs {#AppVersion}
 OutputBaseFilename     = SpeediDocs
-DefaultDirName         = {pf32}\SpeediDocs
+DefaultDirName         = {commonpf}\SpeediDocs
 OutputDir              = _Setup
 AppPublisher           = Bramcote Holdings Pty Ltd
 AppSupportURL          = http:\\support.bhlinsight.com
@@ -36,7 +36,7 @@ Source: Styles\BlueGraphite.vsf; DestDir: {app}; Flags: dontcopy
 
 ; Add-in dll
 Source: "Win32\output\SpeediDocs.dll";                        DestDir: "{app}"; Check: not IsOutlook64bit; Flags: regserver
-; Source: "Win64\SpeediDocs.dll";                               DestDir: "{app}"; Flags: regserver; Check: IsOutlook64bit
+Source: "Win64\output\SpeediDocs.dll";                        DestDir: "{app}"; Flags: regserver; Check: IsOutlook64bit
 Source: "gdiplus.dll";                                        DestDir: "{app}"; Flags: ignoreversion
 Source: "SpeediDocs.ini";                                     DestDir: "{app}";
 Source: "IntResource.dll";                                    DestDir: "{app}"; Flags: ignoreversion
@@ -100,107 +100,119 @@ begin
   if IsWin64 then 
   begin
     // Office 2010
-      // Outlook 2010 x64
-      if RegValueExists(HKEY_LOCAL_MACHINE, 'Software\Microsoft\Office\14.0\Outlook', 'Bitness') then
+    // Excel 2010
+    if RegKeyExists(HKEY_LOCAL_MACHINE, 'Software\Microsoft\Office\14.0\Excel\InstallRoot') then
+    begin
+      if RegQueryStringValue(HKEY_LOCAL_MACHINE, 'Software\Microsoft\Office\14.0\Excel\InstallRoot', 'Path', path) then
       begin
-        if RegQueryStringValue(HKEY_LOCAL_MACHINE, 'Software\Microsoft\Office\14.0\Outlook', 'Bitness', bitness) then
+        if Pos('(x86)', path) = 0 then
         begin
-          Result := bitness = 'x64';
+          Result := True;
           Exit;
         end;
-      end
-      else
+      end;
+    end;
+    // Word 2010
+    if RegKeyExists(HKEY_LOCAL_MACHINE, 'Software\Microsoft\Office\14.0\Word\InstallRoot') then
+    begin
+      if RegQueryStringValue(HKEY_LOCAL_MACHINE, 'Software\Microsoft\Office\14.0\Word\InstallRoot', 'Path', path) then
       begin
-        // check other Office 2010 applications
-        // Excel 2010
-        if RegKeyExists(HKEY_LOCAL_MACHINE, 'Software\Microsoft\Office\14.0\Excel\InstallRoot') then
+        if Pos('(x86)', path) = 0 then
         begin
-          if RegQueryStringValue(HKEY_LOCAL_MACHINE, 'Software\Microsoft\Office\14.0\Excel\InstallRoot', 'Path', path) then
-          begin
-            if Pos('(x86)', path) = 0 then
-            begin
-              Result := True;
-              Exit;
-            end;
-          end;
-        end;
-        // Word 2010
-        if RegKeyExists(HKEY_LOCAL_MACHINE, 'Software\Microsoft\Office\14.0\Word\InstallRoot') then
-        begin
-          if RegQueryStringValue(HKEY_LOCAL_MACHINE, 'Software\Microsoft\Office\14.0\Word\InstallRoot', 'Path', path) then
-          begin
-            if Pos('(x86)', path) = 0 then
-            begin
-              Result := True;
-              Exit;
-            end;
-          end;
-        end;
-        // PowerPoint 2010
-        if RegKeyExists(HKEY_LOCAL_MACHINE, 'Software\Microsoft\Office\14.0\PowerPoint\InstallRoot') then
-        begin
-          if RegQueryStringValue(HKEY_LOCAL_MACHINE, 'Software\Microsoft\Office\14.0\PowerPoint\InstallRoot', 'Path', path) then
-          begin
-            if Pos('(x86)', path) = 0 then
-            begin
-              Result := True;
-              Exit;
-            end;
-          end;
-        end;
-
-        // Office 2013
-        // Outlook 2013 x64
-        if RegValueExists(HKEY_LOCAL_MACHINE, 'Software\Microsoft\Office\15.0\Outlook', 'Bitness') then
-        begin
-          if RegQueryStringValue(HKEY_LOCAL_MACHINE, 'Software\Microsoft\Office\15.0\Outlook', 'Bitness', bitness) then
-          begin
-            Result := bitness = 'x64';
-            Exit;
-          end;
-        end
-        else
-        begin
-          // check other Office 2013 applications
-          // Excel 2013
-          if RegKeyExists(HKEY_LOCAL_MACHINE, 'Software\Microsoft\Office\15.0\Excel\InstallRoot') then
-          begin
-            if RegQueryStringValue(HKEY_LOCAL_MACHINE, 'Software\Microsoft\Office\15.0\Excel\InstallRoot', 'Path', path) then
-            begin
-              if Pos('(x86)', path) = 0 then
-              begin
-                Result := True;
-                Exit;
-              end;
-            end;
-          end;
-          // Word 2013
-          if RegKeyExists(HKEY_LOCAL_MACHINE, 'Software\Microsoft\Office\15.0\Word\InstallRoot') then
-          begin
-            if RegQueryStringValue(HKEY_LOCAL_MACHINE, 'Software\Microsoft\Office\15.0\Word\InstallRoot', 'Path', path) then
-            begin
-              if Pos('(x86)', path) = 0 then
-              begin
-                Result := True;
-                Exit;
-              end;
-            end;
-          end;
-          // PowerPoint 2013
-          if RegKeyExists(HKEY_LOCAL_MACHINE, 'Software\Microsoft\Office\15.0\PowerPoint\InstallRoot') then
-          begin
-            if RegQueryStringValue(HKEY_LOCAL_MACHINE, 'Software\Microsoft\Office\15.0\PowerPoint\InstallRoot', 'Path', path) then
-            begin
-              if Pos('(x86)', path) = 0 then
-              begin
-                Result := True;
-                Exit;
-              end;
-            end;
-          end;
+          Result := True;
+          Exit;
         end;
       end;
-   end;    
+    end;
+    // PowerPoint 2010
+    if RegKeyExists(HKEY_LOCAL_MACHINE, 'Software\Microsoft\Office\14.0\PowerPoint\InstallRoot') then
+    begin
+      if RegQueryStringValue(HKEY_LOCAL_MACHINE, 'Software\Microsoft\Office\14.0\PowerPoint\InstallRoot', 'Path', path) then
+      begin
+        if Pos('(x86)', path) = 0 then
+        begin
+          Result := True;
+          Exit;
+        end;
+      end;
+    end;
+
+    // Office 2013
+    // Excel 2013
+    if RegKeyExists(HKEY_LOCAL_MACHINE, 'Software\Microsoft\Office\15.0\Excel\InstallRoot') then
+    begin
+      if RegQueryStringValue(HKEY_LOCAL_MACHINE, 'Software\Microsoft\Office\15.0\Excel\InstallRoot', 'Path', path) then
+      begin
+        if Pos('(x86)', path) = 0 then
+        begin
+          Result := True;
+          Exit;
+        end;
+      end;
+    end;
+    // Word 2013
+    if RegKeyExists(HKEY_LOCAL_MACHINE, 'Software\Microsoft\Office\15.0\Word\InstallRoot') then
+    begin
+      if RegQueryStringValue(HKEY_LOCAL_MACHINE, 'Software\Microsoft\Office\15.0\Word\InstallRoot', 'Path', path) then
+      begin
+        if Pos('(x86)', path) = 0 then
+        begin
+          Result := True;
+          Exit;
+        end;
+      end;
+    end;
+    // PowerPoint 2013
+    if RegKeyExists(HKEY_LOCAL_MACHINE, 'Software\Microsoft\Office\15.0\PowerPoint\InstallRoot') then
+    begin
+      if RegQueryStringValue(HKEY_LOCAL_MACHINE, 'Software\Microsoft\Office\15.0\PowerPoint\InstallRoot', 'Path', path) then
+      begin
+        if Pos('(x86)', path) = 0 then
+        begin
+          Result := True;
+          Exit;
+        end;
+      end;
+    end;        
+
+    // Office 2016
+    // Excel 2016
+    if RegKeyExists(HKEY_LOCAL_MACHINE, 'Software\Microsoft\Office\16.0\Excel\InstallRoot') then
+    begin
+      if RegQueryStringValue(HKEY_LOCAL_MACHINE, 'Software\Microsoft\Office\16.0\Excel\InstallRoot', 'Path', path) then
+      begin
+        if Pos('(x86)', path) = 0 then
+        begin
+          Result := True;
+          Exit;
+        end;
+      end;
+    end;
+    // Word 2016
+    if RegKeyExists(HKEY_LOCAL_MACHINE, 'Software\Microsoft\Office\16.0\Word\InstallRoot') then
+    begin
+      if RegQueryStringValue(HKEY_LOCAL_MACHINE, 'Software\Microsoft\Office\16.0\Word\InstallRoot', 'Path', path) then
+      begin
+        if Pos('(x86)', path) = 0 then
+        begin
+          Result := True;
+          Exit;
+        end;
+      end;
+    end;
+    // PowerPoint 2016
+    if RegKeyExists(HKEY_LOCAL_MACHINE, 'Software\Microsoft\Office\16.0\PowerPoint\InstallRoot') then
+    begin
+      if RegQueryStringValue(HKEY_LOCAL_MACHINE, 'Software\Microsoft\Office\16.0\PowerPoint\InstallRoot', 'Path', path) then
+      begin
+        if Pos('(x86)', path) = 0 then
+        begin
+          Result := True;
+          Exit;
+        end;
+      end;
+    end;   
+  end;    
 end;
 
 function GetNumber(var temp: String): Integer;

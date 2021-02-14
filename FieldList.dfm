@@ -29,6 +29,7 @@ object frmFieldList: TfrmFieldList
     object tvMergeFields: TcxGridDBTableView
       OnDblClick = tvMergeFieldsDblClick
       Navigator.Buttons.CustomButtons = <>
+      ScrollbarAnnotations.CustomAnnotations = <>
       DataController.DataSource = dsTranslate
       DataController.Summary.DefaultGroupSummaryItems = <>
       DataController.Summary.FooterSummaryItems = <>
